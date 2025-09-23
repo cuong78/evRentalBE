@@ -44,4 +44,4 @@ jobs:
           context: .
           dockerfile: Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/evrental:$(date - '%Y-%m-%d-%H-%M-%S')
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/evrental:${{ github.run_number }}-${{ github.sha }}
