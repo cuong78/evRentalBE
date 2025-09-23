@@ -29,7 +29,7 @@ jobs:
         run: mvn package -DskipTests
 
       - name: Build Docker image
-        run:  action/build-push-action@v4
+        run:  docker/build-push-action@v4
         with:
             context: .
             dockerfile: Dockerfile
@@ -43,7 +43,7 @@ jobs:
           password: ${{ secrets.DOCKE_HUB_ACCESS_TOKEN }}
 
       - name: Push to Docker Hub
-        uses: actions/build-push-action@v4
+        uses: docker/build-push-action@v4
         with:
           context: .
           dockerfile: Dockerfile
