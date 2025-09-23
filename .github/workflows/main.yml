@@ -27,3 +27,27 @@ jobs:
 
       - name: Package
         run: mvn package -DskipTests
+
+      - name: Build Docker image
+        run:  action/build-push-action@v4
+        with:
+            context: .
+            dockerfile: Dockerfile
+            push: false
+            tags: ${{ secrets.DOCKER_HUB_USERNAME }}/evRental:$(date - '%Y-%m-%d-%H-%M-%S')
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKE_HUB_ACCESS_TOKEN }}
+
+      - name: Push to Docker Hub
+        uses: actions/build-push-action@v4
+        with:
+          context: .
+          dockerfile: Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/evRental:$(date - '%Y-%m-%d-%H-%M-%S')
+
+
