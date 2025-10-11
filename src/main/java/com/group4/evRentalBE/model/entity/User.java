@@ -41,6 +41,23 @@ public class User implements UserDetails {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @Column(name = "is_verify", nullable = false)
+    private boolean isVerify = false;
+
+    private int tokenVersion;
+
+    // ✅ COMPOSITION: User owns Customer/Staff/Admin
+    // Khi User bị xóa → Customer/Staff/Admin cũng bị xóa
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Customer customer;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Staff staff;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Admin admin;
+
+    // ✅ ASSOCIATION: Many-to-Many với Role
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -48,44 +65,29 @@ public class User implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "role_name"))
     private Set<Role> roles = new HashSet<>();
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private Customer customer;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private Staff staff;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private Admin admin;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-    private int tokenVersion;
-
-    public int getTokenVersion() {
-        return tokenVersion;
+    // ✅ BUSINESS METHODS
+    public Set<String> getAllPermissions() {
+        return roles.stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .map(Permission::getCode)
+                .collect(Collectors.toSet());
     }
 
     public void incrementTokenVersion() {
         this.tokenVersion++;
     }
 
-    @Column(name = "is_verify", nullable = false)
-    private boolean isVerify = false;
-
-
-    public Set<String> getAllPermissions() {
+    public boolean hasRole(String roleName) {
         return roles.stream()
-                .flatMap(role -> role.getPermissions().stream())
-                .map(Permission::getCode)
-                .collect(Collectors.toSet());
+                .anyMatch(role -> role.getName().equals(roleName));
+    }
+
+    public void addRole(Role role) {
+        this.roles.add(role);
+    }
+
+    public void removeRole(Role role) {
+        this.roles.remove(role);
     }
 
     @Override
@@ -99,28 +101,41 @@ public class User implements UserDetails {
 
         // Thêm trực tiếp permissions
         authorities.addAll(
-                getAllPermissions().stream().map(SimpleGrantedAuthority::new).collect(Collectors.toSet()));
+                getAllPermissions().stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toSet()));
 
         return authorities;
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return UserDetails.super.isAccountNonExpired();
+        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return UserDetails.super.isCredentialsNonExpired();
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
+        return isVerify;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

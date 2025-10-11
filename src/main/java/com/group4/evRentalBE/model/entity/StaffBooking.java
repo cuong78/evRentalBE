@@ -6,22 +6,23 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Staff_Booking")
+@Table(name = "staff_booking", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"staff_id", "booking_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class StaffBooking {
-    @EmbeddedId
-    private StaffBookingId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne
-    @MapsId("staffId")
     @JoinColumn(name = "staff_id")
     private Staff staff;
 
     @ManyToOne
-    @MapsId("bookingId")
     @JoinColumn(name = "booking_id")
     private Booking booking;
 
@@ -33,11 +34,3 @@ public class StaffBooking {
     }
 }
 
-@Embeddable
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class StaffBookingId implements java.io.Serializable {
-    private Long staffId;
-    private Long bookingId;
-}

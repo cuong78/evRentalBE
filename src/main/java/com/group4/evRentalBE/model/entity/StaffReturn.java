@@ -1,27 +1,28 @@
 package com.group4.evRentalBE.model.entity;
 
-
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+
 @Entity
-@Table(name = "Staff_Return")
+@Table(name = "staff_return", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"staff_id", "return_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class StaffReturn {
-    @EmbeddedId
-    private StaffReturnId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne
-    @MapsId("staffId")
     @JoinColumn(name = "staff_id")
     private Staff staff;
 
     @ManyToOne
-    @MapsId("returnId")
     @JoinColumn(name = "return_id")
     private ReturnTransaction returnTransaction;
 
@@ -33,11 +34,3 @@ public class StaffReturn {
     }
 }
 
-@Embeddable
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class StaffReturnId implements java.io.Serializable {
-    private Long staffId;
-    private Long returnId;
-}
