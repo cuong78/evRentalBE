@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "Booking")
@@ -96,19 +95,6 @@ public class Booking {
                 && contract == null;
     }
 
-    public boolean isOverdue() {
-        return LocalDateTime.now().isAfter(endDate)
-                && status == BookingStatus.ACTIVE
-                && returnTransaction == null;
-    }
-
-    public boolean isPending() {
-        return status == BookingStatus.PENDING;
-    }
-
-    public boolean isCompleted() {
-        return status == BookingStatus.COMPLETED && returnTransaction != null;
-    }
 
     // ✅ PAYMENT RELATED METHODS
     public Double getTotalPaid() {
@@ -126,11 +112,7 @@ public class Booking {
         return getTotalPaid() >= calculateTotalCost();
     }
 
-    public List<Payment> getSuccessfulPayments() {
-        return payments.stream()
-                .filter(Payment::isSuccessful)
-                .collect(Collectors.toList());
-    }
+
 
     public void addPayment(Payment payment) {
         payments.add(payment);
@@ -142,26 +124,7 @@ public class Booking {
         }
     }
 
-    public void confirm() {
-        if (this.status != BookingStatus.PENDING) {
-            throw new IllegalStateException("Only pending bookings can be confirmed");
-        }
-        this.status = BookingStatus.CONFIRMED;
-    }
 
-    public void activate() {
-        if (this.status != BookingStatus.CONFIRMED) {
-            throw new IllegalStateException("Only confirmed bookings can be activated");
-        }
-        this.status = BookingStatus.ACTIVE;
-    }
-
-    public void complete() {
-        if (this.status != BookingStatus.ACTIVE) {
-            throw new IllegalStateException("Only active bookings can be completed");
-        }
-        this.status = BookingStatus.COMPLETED;
-    }
 
     public void cancel() {
         if (!canCancel()) {

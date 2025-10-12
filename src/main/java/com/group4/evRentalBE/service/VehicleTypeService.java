@@ -14,4 +14,5 @@ public interface VehicleTypeService {
     void deleteVehicleType(Long id);
     boolean existsByName(String name);
     List<VehicleTypeAvailabilityResponse> getVehicleTypesByStation(Long stationId);
+    List<VehicleTypeAvailabilityResponse> getVehicleTypesByStationAndDateRange(Long stationId, String startDate, String endDate);
 }

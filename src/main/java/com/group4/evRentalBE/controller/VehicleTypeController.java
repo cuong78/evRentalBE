@@ -126,9 +126,19 @@ public class VehicleTypeController {
     }
 
     @GetMapping("/by-station/{stationId}")
-    public ResponseEntity<ResponseObject> getVehicleTypesByStation(@PathVariable Long stationId) {
+    public ResponseEntity<ResponseObject> getVehicleTypesByStation(
+            @PathVariable Long stationId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
         try {
-            List<VehicleTypeAvailabilityResponse> vehicleTypes = vehicleTypeService.getVehicleTypesByStation(stationId);
+            List<VehicleTypeAvailabilityResponse> vehicleTypes;
+            
+            if (startDate != null && endDate != null) {
+                vehicleTypes = vehicleTypeService.getVehicleTypesByStationAndDateRange(stationId, startDate, endDate);
+            } else {
+                vehicleTypes = vehicleTypeService.getVehicleTypesByStation(stationId);
+            }
+            
             return ResponseEntity.ok()
                     .body(ResponseObject.builder()
                             .statusCode(HttpStatus.OK.value())

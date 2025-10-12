@@ -1,5 +1,6 @@
 package com.group4.evRentalBE.model.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.group4.evRentalBE.model.entity.Vehicle;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,6 +11,8 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+
 public class VehicleResponse {
     private Long id;
     private VehicleTypeResponse type;

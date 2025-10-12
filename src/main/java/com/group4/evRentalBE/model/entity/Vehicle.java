@@ -55,6 +55,34 @@ public class Vehicle {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void rentOut() {
+        if (!isAvailable()) {
+            throw new IllegalStateException("Vehicle is not available for rent");
+        }
+        this.status = VehicleStatus.RENTED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void returnVehicle() {
+        if (this.status != VehicleStatus.RENTED) {
+            throw new IllegalStateException("Vehicle is not currently rented");
+        }
+        this.status = VehicleStatus.AVAILABLE;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void markAsDamaged(String notes) {
+        this.status = VehicleStatus.DAMAGED;
+        this.conditionNotes = notes;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void sendToMaintenance(String notes) {
+        this.status = VehicleStatus.MAINTENANCE;
+        this.conditionNotes = notes;
+        this.updatedAt = LocalDateTime.now();
+    }
+
 
     public enum VehicleStatus {
         AVAILABLE, RENTED, DAMAGED, MAINTENANCE

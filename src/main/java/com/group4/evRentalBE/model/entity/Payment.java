@@ -128,11 +128,8 @@ public class Payment {
 
     public enum PaymentMethod {
         CASH,             // Tiền mặt
-        TRANSFER,         // Chuyển khoản
-        CARD,             // Thẻ
         VNPAY,           // VNPay
-        MOMO,            // Momo
-        ZALOPAY          // ZaloPay
+
     }
 
     @PrePersist

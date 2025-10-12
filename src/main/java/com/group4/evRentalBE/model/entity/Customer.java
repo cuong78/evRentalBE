@@ -58,14 +58,9 @@ public class Customer {
         return bookings.stream().anyMatch(Booking::isActive);
     }
 
-    public boolean canMakeNewBooking() {
-        return isDocumentValid() && !hasActiveBooking();
-    }
 
-    public void addBooking(Booking booking) {
-        bookings.add(booking);
-        booking.setCustomer(this);
-    }
+
+
 
     @PrePersist
     protected void onCreate() {
