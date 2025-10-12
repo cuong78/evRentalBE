@@ -5,13 +5,18 @@ import com.group4.evRentalBE.exception.exceptions.ResourceNotFoundException;
 import com.group4.evRentalBE.mapper.VehicleTypeMapper;
 import com.group4.evRentalBE.model.dto.request.VehicleTypeRequest;
 import com.group4.evRentalBE.model.dto.response.VehicleTypeResponse;
+import com.group4.evRentalBE.model.dto.response.VehicleTypeAvailabilityResponse;
+import com.group4.evRentalBE.model.entity.Vehicle;
 import com.group4.evRentalBE.model.entity.VehicleType;
 import com.group4.evRentalBE.repository.VehicleTypeRepository;
+import com.group4.evRentalBE.repository.VehicleRepository;
+import com.group4.evRentalBE.repository.RentalStationRepository;
 import com.group4.evRentalBE.service.VehicleTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,6 +25,8 @@ public class VehicleTypeServiceImpl implements VehicleTypeService {
 
     private final VehicleTypeRepository vehicleTypeRepository;
     private final VehicleTypeMapper vehicleTypeMapper;
+    private final VehicleRepository vehicleRepository;
+    private final RentalStationRepository rentalStationRepository;
 
     @Override
     public VehicleTypeResponse createVehicleType(VehicleTypeRequest vehicleTypeRequest) {
@@ -88,4 +95,38 @@ public class VehicleTypeServiceImpl implements VehicleTypeService {
     public boolean existsByName(String name) {
         return vehicleTypeRepository.existsByName(name);
     }
+
+    @Override
+    public List<VehicleTypeAvailabilityResponse> getVehicleTypesByStation(Long stationId) {
+        // Check if station exists
+        if (!rentalStationRepository.existsById(stationId)) {
+            throw new ResourceNotFoundException("Rental station not found with id: " + stationId);
+        }
+
+        // Get all vehicles at the station
+        List<Vehicle> stationVehicles = vehicleRepository.findByStationId(stationId);
+        
+        // Group vehicles by type and count available ones
+        Map<VehicleType, Long> availableCountByType = stationVehicles.stream()
+                .filter(Vehicle::isAvailable)
+                .collect(Collectors.groupingBy(Vehicle::getType, Collectors.counting()));
+
+        // Get all vehicle types that have vehicles at this station
+        List<VehicleType> vehicleTypesAtStation = stationVehicles.stream()
+                .map(Vehicle::getType)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Build response with availability info
+        return vehicleTypesAtStation.stream()
+                .map(type -> VehicleTypeAvailabilityResponse.builder()
+                        .id(type.getId())
+                        .name(type.getName())
+                        .depositAmount(type.getDepositAmount())
+                        .rentalRate(type.getRentalRate())
+                        .availableCount(availableCountByType.getOrDefault(type, 0L).intValue())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
 }

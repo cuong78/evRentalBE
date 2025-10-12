@@ -18,8 +18,7 @@ public class VehicleTypeMapper {
                 .name(vehicleType.getName())
                 .depositAmount(vehicleType.getDepositAmount())
                 .rentalRate(vehicleType.getRentalRate())
-                .createdAt(vehicleType.getCreatedAt())
-                .updatedAt(vehicleType.getUpdatedAt())
+
                 .build();
     }
 

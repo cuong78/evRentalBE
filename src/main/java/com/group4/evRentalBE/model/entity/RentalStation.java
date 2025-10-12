@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class RentalStation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

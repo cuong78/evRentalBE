@@ -3,6 +3,7 @@ package com.group4.evRentalBE.controller;
 import com.group4.evRentalBE.constant.ResponseObject;
 import com.group4.evRentalBE.model.dto.request.VehicleTypeRequest;
 import com.group4.evRentalBE.model.dto.response.VehicleTypeResponse;
+import com.group4.evRentalBE.model.dto.response.VehicleTypeAvailabilityResponse;
 import com.group4.evRentalBE.service.VehicleTypeService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
@@ -118,6 +119,26 @@ public class VehicleTypeController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ResponseObject.builder()
                             .statusCode(HttpStatus.BAD_REQUEST.value())
+                            .message(e.getMessage())
+                            .data(null)
+                            .build());
+        }
+    }
+
+    @GetMapping("/by-station/{stationId}")
+    public ResponseEntity<ResponseObject> getVehicleTypesByStation(@PathVariable Long stationId) {
+        try {
+            List<VehicleTypeAvailabilityResponse> vehicleTypes = vehicleTypeService.getVehicleTypesByStation(stationId);
+            return ResponseEntity.ok()
+                    .body(ResponseObject.builder()
+                            .statusCode(HttpStatus.OK.value())
+                            .message("Vehicle types for station retrieved successfully")
+                            .data(vehicleTypes)
+                            .build());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ResponseObject.builder()
+                            .statusCode(HttpStatus.NOT_FOUND.value())
                             .message(e.getMessage())
                             .data(null)
                             .build());
