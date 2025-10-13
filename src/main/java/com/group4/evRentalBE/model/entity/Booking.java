@@ -1,6 +1,5 @@
 package com.group4.evRentalBE.model.entity;
 
-
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -38,16 +37,10 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Payment.PaymentMethod paymentMethod;  // Phương thức thanh toán mặc định
+    private Payment.PaymentMethod paymentMethod;
 
     @Column(nullable = false)
-    private Double depositPaid = 0.0;
-
-    @Column(nullable = false)
-    private Double rentalFee;
-
-    @Column(nullable = false)
-    private Double totalInitialPayment = 0.0;
+    private Double totalPayment; // Tổng số tiền phải thanh toán (deposit + rental fee)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -55,6 +48,9 @@ public class Booking {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @Column
+    private LocalDateTime paymentExpiryTime; // Thời hạn thanh toán (10 phút)
 
     // ✅ COMPOSITION: Booking owns Contract
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -74,7 +70,7 @@ public class Booking {
     // ✅ BUSINESS METHODS
     public Double calculateTotalCost() {
         long days = getRentalDays();
-        return days * rentalFee;
+        return (days * type.getRentalRate()) + type.getDepositAmount();
     }
 
     public long getRentalDays() {
@@ -95,56 +91,30 @@ public class Booking {
                 && contract == null;
     }
 
-
-    // ✅ PAYMENT RELATED METHODS
-    public Double getTotalPaid() {
-        return payments.stream()
-                .filter(Payment::isSuccessful)
-                .mapToDouble(Payment::getAmount)
-                .sum();
-    }
-
-    public Double getRemainingAmount() {
-        return Math.max(0, calculateTotalCost() - getTotalPaid());
-    }
-
-    public boolean isFullyPaid() {
-        return getTotalPaid() >= calculateTotalCost();
+    public boolean isPaymentExpired() {
+        return paymentExpiryTime != null && LocalDateTime.now().isAfter(paymentExpiryTime);
     }
 
 
 
-    public void addPayment(Payment payment) {
-        payments.add(payment);
-        payment.setBooking(this);
 
-        // Cập nhật depositPaid nếu là payment DEPOSIT
-        if (payment.getType() == Payment.PaymentType.DEPOSIT && payment.isSuccessful()) {
-            this.depositPaid += payment.getAmount();
-        }
-    }
-
-
-
-    public void cancel() {
-        if (!canCancel()) {
-            throw new IllegalStateException("Booking cannot be cancelled");
-        }
-        this.status = BookingStatus.CANCELLED;
-    }
 
     public enum BookingStatus {
-        PENDING,      // Chờ xác nhận (vừa đặt)
-        CONFIRMED,    // Đã xác nhận (đã thanh toán cọc)
+        PENDING,      // Chờ thanh toán (10 phút)
+        CONFIRMED,    // Đã thanh toán đủ
         ACTIVE,       // Đang thuê (đã nhận xe)
-        COMPLETED,    // Hoàn thành (đã trả xe)
-        CANCELLED     // Đã hủy
+        COMPLETED,    // Hoàn thành (đã trả xe và hoàn tiền)
+        CANCELLED,    // Đã hủy
     }
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        // Set payment expiry time to 10 minutes from creation
+        paymentExpiryTime = LocalDateTime.now().plusMinutes(10);
+        // Calculate total payment
+        totalPayment = calculateTotalCost();
     }
 
     @PreUpdate

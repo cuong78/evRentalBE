@@ -1,36 +1,36 @@
 package com.group4.evRentalBE.model.dto.response;
 
 import com.group4.evRentalBE.model.entity.Booking;
+import com.group4.evRentalBE.model.entity.Payment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class BookingResponse {
     private String id;
-    private CustomerResponse customer;
-    private RentalStationResponse station;
-    private VehicleTypeResponse type;
+    private Long customerId;
+    private Long stationId;
+    private Long typeId;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    private Double totalPayment;
     private Booking.BookingStatus status;
-    private Double depositAmount;
-    private Double rentalFee;
-    private Double totalCost;
-    private Long rentalDays;
+    private Payment.PaymentMethod paymentMethod;
+    private LocalDateTime paymentExpiryTime;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Payment information
+    // Additional calculated fields for frontend convenience
+    private Long rentalDays;
+    private Boolean isPaymentExpired;
+    private Boolean canCancel;
     private Double totalPaid;
-    private Double remainingAmount;
     private Boolean isFullyPaid;
-    private List<PaymentResponse> payments;
 }

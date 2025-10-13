@@ -15,14 +15,13 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
     
     @Query("SELECT b FROM Booking b WHERE b.station.id = :stationId " +
            "AND b.type.id = :typeId " +
-           "AND b.status NOT IN ('CANCELLED', 'COMPLETED') " +
+           "AND b.status NOT IN ('CANCELLED', 'COMPLETED', 'EXPIRED') " +
            "AND ((b.startDate <= :endDate AND b.endDate >= :startDate))")
     List<Booking> findOverlappingBookings(@Param("stationId") Long stationId,
                                         @Param("typeId") Long typeId,
                                         @Param("startDate") LocalDateTime startDate,
                                         @Param("endDate") LocalDateTime endDate);
 
+    List<Booking> findByStatusAndPaymentExpiryTimeBefore(Booking.BookingStatus status, LocalDateTime paymentExpiryTime);
     List<Booking> findByCustomerId(Long customerId);
-    List<Booking> findByStationId(Long stationId);
-
 }

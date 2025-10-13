@@ -64,6 +64,7 @@ public class SecurityConfig {
                                 "/api/facebook-login",
                                 "/api/reset-password",
                                 "/api/forgot-password",
+                                "/api/payments/vnpay-return",
                                 "/api/verify"
                                 )
                         .permitAll() // Các endpoint không cần xác thực
