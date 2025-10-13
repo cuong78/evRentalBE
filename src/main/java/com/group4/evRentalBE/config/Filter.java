@@ -46,6 +46,7 @@ public class Filter extends OncePerRequestFilter {
             "/api/register",
             "/api/refresh-token",
             "/api/google-login",
+            "/api/payments/vnpay-return",
             "/api/facebook-login",
             "/api/reset-password",
             "/api/forgot-password",

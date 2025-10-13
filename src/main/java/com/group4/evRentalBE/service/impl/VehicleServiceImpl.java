@@ -136,4 +136,22 @@ public class VehicleServiceImpl implements VehicleService {
                 .map(vehicleMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<VehicleResponse> getVehiclesByStationAndType(Long stationId, Long typeId) {
+        // Validate station exists
+        if (!rentalStationRepository.existsById(stationId)) {
+            throw new ResourceNotFoundException("RentalStation not found with id: " + stationId);
+        }
+
+        // Validate vehicle type exists
+        if (!vehicleTypeRepository.existsById(typeId)) {
+            throw new ResourceNotFoundException("VehicleType not found with id: " + typeId);
+        }
+
+        List<Vehicle> vehicles = vehicleRepository.findByStationIdAndTypeId(stationId, typeId);
+        return vehicles.stream()
+                .map(vehicleMapper::toResponse)
+                .collect(Collectors.toList());
+    }
 }

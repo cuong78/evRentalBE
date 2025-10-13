@@ -204,4 +204,26 @@ public class VehicleController {
                             .build());
         }
     }
+
+    @GetMapping("/station/{stationId}/type/{typeId}")
+    public ResponseEntity<ResponseObject> getVehiclesByStationAndType(
+            @PathVariable Long stationId,
+            @PathVariable Long typeId) {
+        try {
+            List<VehicleResponse> vehicles = vehicleService.getVehiclesByStationAndType(stationId, typeId);
+            return ResponseEntity.ok()
+                    .body(ResponseObject.builder()
+                            .statusCode(HttpStatus.OK.value())
+                            .message("Vehicles retrieved successfully")
+                            .data(vehicles)
+                            .build());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ResponseObject.builder()
+                            .statusCode(HttpStatus.NOT_FOUND.value())
+                            .message(e.getMessage())
+                            .data(null)
+                            .build());
+        }
+    }
 }

@@ -22,7 +22,7 @@ public class VehicleTypeController {
 
     private final VehicleTypeService vehicleTypeService;
 
-    @PostMapping
+    @PostMapping()
     public ResponseEntity<ResponseObject> createVehicleType(
             @Valid @RequestBody VehicleTypeRequest vehicleTypeRequest) {
         try {

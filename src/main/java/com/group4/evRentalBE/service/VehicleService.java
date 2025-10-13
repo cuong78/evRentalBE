@@ -15,4 +15,5 @@ public interface VehicleService {
     List<VehicleResponse> getVehiclesByType(Long typeId);
     List<VehicleResponse> getAvailableVehicles();
     List<VehicleResponse> getAvailableVehiclesByStation(Long stationId);
+    List<VehicleResponse> getVehiclesByStationAndType(Long stationId, Long typeId);
 }

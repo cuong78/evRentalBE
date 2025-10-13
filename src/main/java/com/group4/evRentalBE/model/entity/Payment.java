@@ -16,7 +16,6 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ✅ COMPOSITION: Payment thuộc về Booking
     @ManyToOne
     @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;
@@ -50,69 +49,10 @@ public class Payment {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // ✅ BUSINESS METHODS
-    public boolean processPayment() {
-        if (this.status == PaymentStatus.SUCCESS) {
-            return false; // Đã thanh toán rồi
-        }
-
-        this.status = PaymentStatus.PROCESSING;
-        this.paymentDate = LocalDateTime.now();
-        return true;
-    }
-
-    public void confirmPayment() {
-        if (this.status != PaymentStatus.PROCESSING) {
-            throw new IllegalStateException("Payment must be in PROCESSING state");
-        }
-        this.status = PaymentStatus.SUCCESS;
-        this.paymentDate = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public void failPayment(String reason) {
-        this.status = PaymentStatus.FAILED;
-        this.description = (this.description != null ? this.description + " | " : "") + "Failed: " + reason;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public void cancelPayment() {
-        if (this.status == PaymentStatus.SUCCESS) {
-            throw new IllegalStateException("Cannot cancel successful payment");
-        }
-        this.status = PaymentStatus.CANCELLED;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public void refundPayment() {
-        if (this.status != PaymentStatus.SUCCESS) {
-            throw new IllegalStateException("Can only refund successful payments");
-        }
-        this.status = PaymentStatus.REFUNDED;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public boolean isSuccessful() {
-        return this.status == PaymentStatus.SUCCESS;
-    }
-
-    public boolean isPending() {
-        return this.status == PaymentStatus.PENDING;
-    }
-
-    public boolean canBeProcessed() {
-        return this.status == PaymentStatus.PENDING || this.status == PaymentStatus.FAILED;
-    }
-
-    public String getPaymentInfo() {
-        return String.format("Payment #%d - %s: %.2f VND via %s - Status: %s",
-                id, type, amount, method, status);
-    }
 
     // ✅ ENUMS
     public enum PaymentType {
         DEPOSIT,           // Tiền cọc khi đặt xe
-        RENTAL_FEE,        // Phí thuê xe (nếu thanh toán sau)
         ADDITIONAL_FEE,    // Phí phát sinh (trễ giờ, hư hỏng, etc.)
         REFUND            // Hoàn tiền cọc
     }
@@ -122,8 +62,6 @@ public class Payment {
         PROCESSING,       // Đang xử lý
         SUCCESS,          // Thành công
         FAILED,           // Thất bại
-        CANCELLED,        // Đã hủy
-        REFUNDED          // Đã hoàn tiền
     }
 
     public enum PaymentMethod {
