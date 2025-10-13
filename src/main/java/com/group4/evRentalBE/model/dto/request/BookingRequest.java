@@ -16,8 +16,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class BookingRequest {
 
-    @NotNull(message = "Customer ID is required")
-    private Long customerId;
 
     @NotNull(message = "Station ID is required")
     private Long stationId;
@@ -33,6 +31,5 @@ public class BookingRequest {
     @Future(message = "End date must be in the future")
     private LocalDateTime endDate;
 
-    @NotNull(message = "Payment method is required")
-    private Payment.PaymentMethod paymentMethod;
+
 }

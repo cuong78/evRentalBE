@@ -113,20 +113,49 @@ public class ReturnTransactionServiceImpl implements ReturnTransactionService {
     }
 
     private void processRefund(Booking booking, ReturnTransaction returnTransaction) {
-        // Create refund payment
+        String description = "Refund for booking " + booking.getId() +
+                ". Additional fees: " + returnTransaction.getAdditionalFees();
+
+        // Check if refund method is TRANSFER (which includes VNPay)
+        if (returnTransaction.getRefundMethod() == ReturnTransaction.RefundMethod.TRANSFER) {
+            // Find the original deposit payment
+            Payment originalPayment = paymentRepository.findFirstByBookingAndTypeAndStatusOrderByCreatedAtDesc(
+                    booking, 
+                    Payment.PaymentType.DEPOSIT, 
+                    Payment.PaymentStatus.SUCCESS
+            ).orElse(null);
+
+            if (originalPayment != null && originalPayment.getMethod() == Payment.PaymentMethod.VNPAY) {
+                // Process automatic refund through VNPay
+                try {
+                    paymentService.processVnPayRefund(
+                            originalPayment, 
+                            returnTransaction.getRefundAmount(), 
+                            description
+                    );
+                    // Refund payment is created inside processVnPayRefund method
+                    return;
+                } catch (Exception e) {
+                    // If automatic refund fails, fall back to manual refund
+                    // Log the error
+                    System.err.println("Automatic VNPay refund failed: " + e.getMessage());
+                }
+            }
+        }
+
+        // Create manual refund payment (for CASH or if VNPay refund failed)
         Payment refundPayment = Payment.builder()
                 .booking(booking)
                 .type(Payment.PaymentType.REFUND)
                 .method(returnTransaction.getRefundMethod() ==
                         ReturnTransaction.RefundMethod.CASH ?
                         Payment.PaymentMethod.CASH :
-                        Payment.PaymentMethod.VNPAY)
+                        Payment.PaymentMethod.VNPAY) // VNPAY for TRANSFER method
                 .status(Payment.PaymentStatus.SUCCESS)
                 .amount(returnTransaction.getRefundAmount())
                 .transactionId("REFUND_" + UUID.randomUUID().toString())
                 .paymentDate(LocalDateTime.now())
-                .description("Refund for booking " + booking.getId() +
-                        ". Additional fees: " + returnTransaction.getAdditionalFees())
+                .description(description)
                 .build();
 
         paymentRepository.save(refundPayment);

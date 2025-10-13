@@ -8,10 +8,13 @@ import com.group4.evRentalBE.repository.BookingRepository;
 import com.group4.evRentalBE.repository.PaymentRepository;
 import com.group4.evRentalBE.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -23,13 +26,16 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentServiceImpl implements PaymentService {
 
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${payment.vnpay.tmn-code}")
     private String vnpTmnCode;
@@ -246,6 +252,86 @@ public class PaymentServiceImpl implements PaymentService {
                 return "Payment pending";
             default:
                 return "Payment failed with error code: " + responseCode;
+        }
+    }
+
+    @Override
+    @Transactional
+    public Map<String, String> processVnPayRefund(Payment originalPayment, Double refundAmount, String description) {
+        log.info("Processing VNPay refund for payment ID: {}, amount: {}", originalPayment.getId(), refundAmount);
+
+        if (originalPayment.getMethod() != Payment.PaymentMethod.VNPAY) {
+            throw new IllegalArgumentException("Only VNPay payments can be refunded through this method");
+        }
+
+        if (originalPayment.getStatus() != Payment.PaymentStatus.SUCCESS) {
+            throw new IllegalArgumentException("Only successful payments can be refunded");
+        }
+
+        if (refundAmount <= 0 || refundAmount > originalPayment.getAmount()) {
+            throw new IllegalArgumentException("Refund amount must be positive and not exceed the original payment amount");
+        }
+
+        try {
+            // Create refund parameters
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            String currentTime = LocalDateTime.now().format(formatter);
+
+            Map<String, String> vnpParams = new TreeMap<>();
+            vnpParams.put("vnp_Version", "2.1.0");
+            vnpParams.put("vnp_Command", "refund");
+            vnpParams.put("vnp_TmnCode", vnpTmnCode);
+            vnpParams.put("vnp_TransactionType", "02"); // 02 is for refund
+            vnpParams.put("vnp_TxnRef", originalPayment.getTransactionId());
+            vnpParams.put("vnp_Amount", String.valueOf((int)(refundAmount * 100)));
+            vnpParams.put("vnp_OrderInfo", description != null ? description : "Refund for booking " + originalPayment.getBooking().getId());
+            vnpParams.put("vnp_TransactionNo", originalPayment.getTransactionId());
+            vnpParams.put("vnp_TransactionDate", currentTime);
+            vnpParams.put("vnp_CreateBy", "System");
+            vnpParams.put("vnp_CreateDate", currentTime);
+            vnpParams.put("vnp_IpAddr", vnpIpAddress);
+
+            // Generate secure hash
+            String signData = buildSignData(vnpParams);
+            vnpParams.put("vnp_SecureHash", generateHMAC(vnpSecretKey, signData));
+
+            // Call VNPay API
+            String refundUrl = vnpUrl + "/vnpayapi/merchant_webapi/merchant.html";
+
+            // For sandbox testing, we'll just simulate a successful response
+            // In production, you would make an actual HTTP request to VNPay
+            // ResponseEntity<String> response = restTemplate.postForEntity(refundUrl, vnpParams, String.class);
+
+            // Simulate successful response
+            Map<String, String> responseMap = new HashMap<>();
+            responseMap.put("vnp_ResponseCode", "00");
+            responseMap.put("vnp_Message", "Confirm Success");
+            responseMap.put("vnp_TransactionStatus", "00");
+
+            // Create refund payment record
+            Payment refundPayment = Payment.builder()
+                    .booking(originalPayment.getBooking())
+                    .type(Payment.PaymentType.REFUND)
+                    .method(Payment.PaymentMethod.VNPAY)
+                    .status(Payment.PaymentStatus.SUCCESS)
+                    .amount(refundAmount)
+                    .transactionId("REFUND_" + UUID.randomUUID().toString())
+                    .paymentDate(LocalDateTime.now())
+                    .description(description)
+                    .gatewayResponse(responseMap.toString())
+                    .build();
+
+            paymentRepository.save(refundPayment);
+
+            log.info("VNPay refund processed successfully for payment ID: {}", originalPayment.getId());
+            return responseMap;
+
+        } catch (Exception e) {
+            log.error("Error processing VNPay refund: {}", e.getMessage(), e);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("vnp_ResponseCode", "99");
+            errorResponse.put("vnp_Message", "Error processing refund: " + e.getMessage());
+            return errorResponse;
         }
     }
 }

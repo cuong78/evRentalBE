@@ -8,6 +8,8 @@ import com.group4.evRentalBE.repository.*;
 import com.group4.evRentalBE.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,9 +30,13 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponse createBooking(BookingRequest bookingRequest) {
-        // Validate entities exist
-        Customer customer = customerRepository.findById(bookingRequest.getCustomerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+        // Get authenticated user from SecurityContextHolder
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) authentication.getPrincipal();
+
+        // Find customer by user ID
+        Customer customer = customerRepository.findByUser_UserId(user.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found for authenticated user"));
 
         RentalStation station = rentalStationRepository.findById(bookingRequest.getStationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Rental station not found"));
@@ -46,7 +52,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setType(vehicleType);
         booking.setStartDate(bookingRequest.getStartDate());
         booking.setEndDate(bookingRequest.getEndDate());
-        booking.setPaymentMethod(bookingRequest.getPaymentMethod());
+        booking.setPaymentMethod(Payment.PaymentMethod.VNPAY);
 
         // PrePersist will set createdAt, updatedAt, paymentExpiryTime and calculate totalPayment
         Booking savedBooking = bookingRepository.save(booking);
