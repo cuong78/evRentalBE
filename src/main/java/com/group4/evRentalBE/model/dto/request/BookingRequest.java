@@ -1,6 +1,5 @@
 package com.group4.evRentalBE.model.dto.request;
 
-import com.group4.evRentalBE.model.entity.Payment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,8 +14,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookingRequest {
-
-
     @NotNull(message = "Station ID is required")
     private Long stationId;
 

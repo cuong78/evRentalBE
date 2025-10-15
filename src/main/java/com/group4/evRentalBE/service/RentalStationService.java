@@ -13,8 +13,5 @@ public interface RentalStationService {
     void deleteRentalStation(Long id);
     List<RentalStationResponse> getRentalStationsByCity(String city);
 
-    // Business methods
-    RentalStationResponse assignAdminToStation(Long stationId, Long adminId);
-    RentalStationResponse removeAdminFromStation(Long stationId);
-    List<RentalStationResponse> getStationsWithoutAdmin();
+
 }

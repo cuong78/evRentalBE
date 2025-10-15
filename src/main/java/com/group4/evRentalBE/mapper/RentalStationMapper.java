@@ -3,7 +3,7 @@ package com.group4.evRentalBE.mapper;
 import com.group4.evRentalBE.model.dto.request.RentalStationRequest;
 import com.group4.evRentalBE.model.dto.response.*;
 import com.group4.evRentalBE.model.entity.RentalStation;
-import com.group4.evRentalBE.model.entity.Admin;
+import com.group4.evRentalBE.model.entity.User;
 
 import org.springframework.stereotype.Component;
 
@@ -18,21 +18,22 @@ public class RentalStationMapper {
             return null;
         }
 
-        // Map admin
+        // Map admin user
         AdminResponse adminResponse = null;
-        if (rentalStation.getAdmin() != null) {
+        if (rentalStation.getAdminUser() != null) {
             adminResponse = new AdminResponse(
-                    rentalStation.getAdmin().getId(),
-                    rentalStation.getAdmin().getName()
+                    rentalStation.getAdminUser().getUserId(),
+                    rentalStation.getAdminUser().getUsername()
             );
         }
 
-        // Map staff members
-        List<StaffResponse> staffResponses = rentalStation.getStaffMembers().stream()
-                .map(staff -> new StaffResponse(
-                        staff.getId(),
-                        staff.getName(),
-                        staff.getRole()
+        // Map staff users
+        List<StaffResponse> staffResponses = rentalStation.getStaffUsers().stream()
+                .filter(user -> user.hasRole("STAFF"))
+                .map(user -> new StaffResponse(
+                        user.getUserId(),
+                        user.getUsername(),
+                        "STAFF"
                 ))
                 .collect(Collectors.toList());
 
@@ -59,7 +60,7 @@ public class RentalStationMapper {
                 vehicleResponses,
                 rentalStation.getCreatedAt(),
                 rentalStation.getUpdatedAt(),
-                rentalStation.getStaffMembers().size(),
+                rentalStation.getStaffUsers().size(),
                 rentalStation.getVehicles().size(),
                 availableVehicles
         );
@@ -67,11 +68,11 @@ public class RentalStationMapper {
         return response;
     }
 
-    public RentalStation toEntity(RentalStationRequest request, Admin admin) {
+    public RentalStation toEntity(RentalStationRequest request, User adminUser) {
         return RentalStation.builder()
                 .city(request.getCity())
                 .address(request.getAddress())
-                .admin(admin)
+                .adminUser(adminUser)
                 .build();
     }
 }

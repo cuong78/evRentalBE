@@ -8,6 +8,6 @@ import java.util.List;
 public interface BookingService {
     BookingResponse createBooking(BookingRequest bookingRequest);
     BookingResponse getBookingById(String id);
-    List<BookingResponse> getBookingsByCustomer(Long customerId);
+    List<BookingResponse> getBookingsByCustomer(Long userId);
     void cancelExpiredBookings();
 }

@@ -29,22 +29,25 @@ public class RentalStation {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // ✅ AGGREGATION: Station được quản lý bởi Admin (không cascade)
+    // ✅ AGGREGATION: Station được quản lý bởi User có role ADMIN (không cascade)
     @ManyToOne
-    @JoinColumn(name = "admin_id")
-    private Admin admin;
+    @JoinColumn(name = "admin_user_id")
+    private User adminUser;
 
-    // ✅ AGGREGATION: Station thuê Staff (không cascade ALL)
+    // ✅ AGGREGATION: Station có Staff Users (không cascade ALL)
     // Staff có thể chuyển station khác
-    @OneToMany(mappedBy = "station", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    private List<Staff> staffMembers = new ArrayList<>();
+    @OneToMany(mappedBy = "managedStation", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @Builder.Default
+    private List<User> staffUsers = new ArrayList<>();
 
     // ✅ AGGREGATION: Station chứa Vehicle (không cascade ALL)
     @OneToMany(mappedBy = "station", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @Builder.Default
     private List<Vehicle> vehicles = new ArrayList<>();
 
     // ✅ ASSOCIATION: Station xử lý Booking
     @OneToMany(mappedBy = "station", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @Builder.Default
     private List<Booking> bookings = new ArrayList<>();
 
     // ✅ BUSINESS METHODS
@@ -60,20 +63,20 @@ public class RentalStation {
                 .collect(Collectors.toList());
     }
 
-    public List<Staff> getStaffMembers() {
-        return new ArrayList<>(staffMembers);
+    public List<User> getStaffUsers() {
+        return new ArrayList<>(staffUsers);
     }
 
-    public void assignStaff(Staff staff) {
-        if (!staffMembers.contains(staff)) {
-            staffMembers.add(staff);
-            staff.setStation(this);
+    public void assignStaff(User staffUser) {
+        if (!staffUsers.contains(staffUser) && staffUser.hasRole("STAFF")) {
+            staffUsers.add(staffUser);
+            staffUser.setManagedStation(this);
         }
     }
 
-    public void removeStaff(Staff staff) {
-        staffMembers.remove(staff);
-        staff.setStation(null);
+    public void removeStaff(User staffUser) {
+        staffUsers.remove(staffUser);
+        staffUser.setManagedStation(null);
     }
 
     public void addVehicle(Vehicle vehicle) {

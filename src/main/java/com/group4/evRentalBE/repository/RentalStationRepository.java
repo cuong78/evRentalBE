@@ -11,5 +11,4 @@ import java.util.Optional;
 public interface RentalStationRepository extends JpaRepository<RentalStation, Long> {
     List<RentalStation> findByCity(String city);
     boolean existsByCityAndAddress(String city, String address);
-    Optional<RentalStation> findByAdminId(Long adminId);
 }

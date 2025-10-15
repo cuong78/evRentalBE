@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
-    private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
     private final RentalStationRepository rentalStationRepository;
     private final VehicleTypeRepository vehicleTypeRepository;
 
@@ -34,9 +34,14 @@ public class BookingServiceImpl implements BookingService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
 
-        // Find customer by user ID
-        Customer customer = customerRepository.findByUser_UserId(user.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found for authenticated user"));
+        // Verify user exists in database (optional safety check)
+        User authenticatedUser = userRepository.findById(user.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Check if user has CUSTOMER role
+        if (!authenticatedUser.hasRole("CUSTOMER")) {
+            throw new ResourceNotFoundException("User does not have customer role");
+        }
 
         RentalStation station = rentalStationRepository.findById(bookingRequest.getStationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Rental station not found"));
@@ -47,7 +52,7 @@ public class BookingServiceImpl implements BookingService {
         // Create booking
         Booking booking = new Booking();
         booking.setId(UUID.randomUUID().toString());
-        booking.setCustomer(customer);
+        booking.setUser(authenticatedUser);
         booking.setStation(station);
         booking.setType(vehicleType);
         booking.setStartDate(bookingRequest.getStartDate());
@@ -68,12 +73,12 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingResponse> getBookingsByCustomer(Long customerId) {
-        if (!customerRepository.existsById(customerId)) {
-            throw new ResourceNotFoundException("Customer not found");
+    public List<BookingResponse> getBookingsByCustomer(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found");
         }
 
-        return bookingRepository.findByCustomerId(customerId)
+        return bookingRepository.findByUserUserId(userId)
                 .stream()
                 .map(this::mapToBookingResponse)
                 .collect(Collectors.toList());
@@ -98,7 +103,7 @@ public class BookingServiceImpl implements BookingService {
     private BookingResponse mapToBookingResponse(Booking booking) {
         return BookingResponse.builder()
                 .id(booking.getId())
-                .customerId(booking.getCustomer().getId())
+                .userId(booking.getUser().getUserId())
                 .stationId(booking.getStation().getId())
                 .typeId(booking.getType().getId())
                 .startDate(booking.getStartDate())

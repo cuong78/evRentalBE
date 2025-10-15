@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Contract {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +26,11 @@ public class Contract {
     @OneToOne
     @JoinColumn(name = "vehicle_id", nullable = false, unique = true)
     private Vehicle vehicle;
+
+    // ✅ ASSOCIATION: Contract liên kết với Document của User
+    @ManyToOne
+    @JoinColumn(name = "document_id", nullable = false)
+    private Document document;
 
     @Column(nullable = false)
     private String cccd;
@@ -43,8 +49,13 @@ public class Contract {
 
     public boolean validateContract() {
         return cccd != null && !cccd.trim().isEmpty()
+                && document != null && document.isValid()
                 && signaturePhoto != null && !signaturePhoto.trim().isEmpty()
                 && vehiclePhoto != null && !vehiclePhoto.trim().isEmpty();
+    }
+
+    public boolean isDocumentValid() {
+        return document != null && document.isValid();
     }
 
 
