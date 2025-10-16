@@ -16,7 +16,6 @@ public class Document {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ✅ ASSOCIATION: Document thuộc về User
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -76,7 +75,6 @@ public class Document {
         REJECTED
     }
 
-    // ✅ BUSINESS METHODS
     public boolean isValid() {
         return status == DocumentStatus.VERIFIED 
                 && (expiryDate == null || expiryDate.isAfter(LocalDateTime.now()));

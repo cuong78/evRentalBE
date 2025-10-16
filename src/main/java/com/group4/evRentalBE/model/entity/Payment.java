@@ -50,7 +50,6 @@ public class Payment {
     private LocalDateTime updatedAt;
 
 
-    // ✅ ENUMS
     public enum PaymentType {
         DEPOSIT,           // Tiền cọc khi đặt xe
         REFUND            // Hoàn tiền cọc

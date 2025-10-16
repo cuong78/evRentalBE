@@ -17,46 +17,22 @@ public class Contract {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ✅ COMPOSITION: Contract thuộc về Booking
     @OneToOne
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
     private Booking booking;
 
-    // ✅ ASSOCIATION: Contract gán cho Vehicle cụ thể
-    @OneToOne
-    @JoinColumn(name = "vehicle_id", nullable = false, unique = true)
+    @ManyToOne
+    @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
-    // ✅ ASSOCIATION: Contract liên kết với Document của User
     @ManyToOne
     @JoinColumn(name = "document_id", nullable = false)
     private Document document;
 
-    @Column(nullable = false)
-    private String cccd;
-
     @Column(columnDefinition = "TEXT")
     private String conditionNotes;
-
-    @Column(columnDefinition = "TEXT")
-    private String invoiceDetails;
-
-    private String signaturePhoto;
-    private String vehiclePhoto;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-
-    public boolean validateContract() {
-        return cccd != null && !cccd.trim().isEmpty()
-                && document != null && document.isValid()
-                && signaturePhoto != null && !signaturePhoto.trim().isEmpty()
-                && vehiclePhoto != null && !vehiclePhoto.trim().isEmpty();
-    }
-
-    public boolean isDocumentValid() {
-        return document != null && document.isValid();
-    }
 
 
     @PrePersist

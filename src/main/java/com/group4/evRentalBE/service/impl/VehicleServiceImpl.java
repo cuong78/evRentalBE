@@ -98,7 +98,7 @@ public class VehicleServiceImpl implements VehicleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with id: " + id));
 
         // Check if vehicle has active contracts
-        if (vehicle.getContract() != null) {
+        if (vehicle.getContracts() != null) {
             throw new ConflictException("Cannot delete vehicle. There is an active contract associated with this vehicle.");
         }
 

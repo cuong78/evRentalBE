@@ -30,26 +30,26 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional
     public DocumentResponse createDocument(DocumentRequest documentRequest) {
-        // Validate user exists
+        // Find the user
         User user = userRepository.findById(documentRequest.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Check for duplicate document number
-        if (documentRepository.existsByDocumentNumber(documentRequest.getDocumentNumber())) {
-            throw new ConflictException("Document with this number already exists");
-        }
+        // Create the document
+        Document document = documentMapper.toEntity(documentRequest, user);
 
-        // If setting as default, ensure no other default exists for this user
-        if (documentRequest.isDefault()) {
-            int defaultCount = documentRepository.countDefaultDocumentsByUserId(user.getUserId());
-            if (defaultCount > 0) {
-                throw new ConflictException("User already has a default document. Please unset the current default first.");
+        // If this is set as default, unset any other default documents for this user
+        if (document.isDefault()) {
+            Document defaultDocument = documentRepository.findByUserAndIsDefaultTrue(user);
+            if (defaultDocument != null) {
+                defaultDocument.unsetDefault();
+                documentRepository.save(defaultDocument);
             }
         }
 
-        Document document = documentMapper.toEntity(documentRequest, user);
+        // Save the document
         Document savedDocument = documentRepository.save(document);
 
+        // Return the response
         return documentMapper.toResponse(savedDocument);
     }
 
@@ -61,37 +61,20 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public List<DocumentResponse> getDocumentsByUserId(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found");
-        }
-
-        return documentRepository.findByUserUserId(userId)
-                .stream()
+    public List<DocumentResponse> getAllDocuments() {
+        return documentRepository.findAll().stream()
                 .map(documentMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public DocumentResponse getDefaultDocumentByUserId(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found");
-        }
+    public List<DocumentResponse> getDocumentsByUserId(Long userId) {
+        // Find the user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Document document = documentRepository.findByUserUserIdAndIsDefaultTrue(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("No default document found for user"));
-        
-        return documentMapper.toResponse(document);
-    }
-
-    @Override
-    public List<DocumentResponse> getValidDocumentsByUserId(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found");
-        }
-
-        return documentRepository.findValidDocumentsByUserId(userId, LocalDateTime.now())
-                .stream()
+        // Find all documents for this user
+        return documentRepository.findByUserUserId(userId).stream()
                 .map(documentMapper::toResponse)
                 .collect(Collectors.toList());
     }
@@ -99,92 +82,37 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional
     public DocumentResponse updateDocument(Long id, DocumentRequest documentRequest) {
+        // Find the document
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
 
-        // Check for duplicate document number if changed
-        if (!document.getDocumentNumber().equals(documentRequest.getDocumentNumber()) &&
-            documentRepository.existsByDocumentNumber(documentRequest.getDocumentNumber())) {
-            throw new ConflictException("Document with this number already exists");
+        // Update the document
+        documentMapper.updateEntity(document, documentRequest);
+
+        // If this is set as default, unset any other default documents for this user
+        if (document.isDefault()) {
+            Document defaultDocument = documentRepository.findByUserAndIsDefaultTrue(document.getUser());
+            if (defaultDocument != null && !defaultDocument.getId().equals(id)) {
+                defaultDocument.unsetDefault();
+                documentRepository.save(defaultDocument);
+            }
         }
 
-        documentMapper.updateEntity(document, documentRequest);
-        Document savedDocument = documentRepository.save(document);
+        // Save the document
+        Document updatedDocument = documentRepository.save(document);
 
-        return documentMapper.toResponse(savedDocument);
+        // Return the response
+        return documentMapper.toResponse(updatedDocument);
     }
 
     @Override
     @Transactional
     public void deleteDocument(Long id) {
+        // Find the document
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
 
+        // Delete the document
         documentRepository.delete(document);
-    }
-
-    @Override
-    @Transactional
-    public DocumentResponse verifyDocument(Long id) {
-        Document document = documentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
-
-        document.verify();
-        Document savedDocument = documentRepository.save(document);
-
-        return documentMapper.toResponse(savedDocument);
-    }
-
-    @Override
-    @Transactional
-    public DocumentResponse rejectDocument(Long id) {
-        Document document = documentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
-
-        document.reject();
-        Document savedDocument = documentRepository.save(document);
-
-        return documentMapper.toResponse(savedDocument);
-    }
-
-    @Override
-    @Transactional
-    public DocumentResponse setAsDefault(Long userId, Long documentId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        Document document = documentRepository.findById(documentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
-
-        if (!document.getUser().getUserId().equals(userId)) {
-            throw new ConflictException("Document does not belong to the specified user");
-        }
-
-        if (!document.isValid()) {
-            throw new ConflictException("Cannot set invalid document as default");
-        }
-
-        // Unset current default
-        user.getDocuments().forEach(Document::unsetDefault);
-        documentRepository.saveAll(user.getDocuments());
-
-        // Set new default
-        document.setAsDefault();
-        Document savedDocument = documentRepository.save(document);
-
-        return documentMapper.toResponse(savedDocument);
-    }
-
-    @Override
-    @Scheduled(fixedRate = 3600000) // Run every hour
-    @Transactional
-    public void expireOldDocuments() {
-        List<Document> expiredDocuments = documentRepository.findExpiredDocuments(LocalDateTime.now());
-        
-        for (Document document : expiredDocuments) {
-            document.setStatus(Document.DocumentStatus.EXPIRED);
-        }
-        
-        documentRepository.saveAll(expiredDocuments);
     }
 }

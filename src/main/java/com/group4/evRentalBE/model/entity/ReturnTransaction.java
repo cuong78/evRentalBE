@@ -43,9 +43,6 @@ public class ReturnTransaction {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "returnTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<StaffReturn> staffReturns = new ArrayList<>();
-
 
     public boolean isLateReturn() {
         return returnDate.isAfter(booking.getEndDate());
