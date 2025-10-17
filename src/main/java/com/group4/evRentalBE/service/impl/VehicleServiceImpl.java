@@ -14,6 +14,7 @@ import com.group4.evRentalBE.service.VehicleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +143,7 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     @Override
-    public VehicleAvailabilityResponse searchAvailableVehicles(Long stationId, LocalDateTime startDate, LocalDateTime endDate) {
+    public VehicleAvailabilityResponse searchAvailableVehicles(Long stationId, LocalDate startDate, LocalDate endDate) {
         // Validate dates
         if (startDate.isAfter(endDate)) {
             throw new IllegalArgumentException("Start date must be before end date");

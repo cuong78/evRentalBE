@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -195,11 +196,11 @@ public class VehicleController {
     @GetMapping("/search")
     public ResponseEntity<ResponseObject> searchAvailableVehicles(
             @RequestParam Long stationId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         try {
 
-            VehicleAvailabilityResponse response = vehicleService.searchAvailableVehicles(stationId,startDate,endDate);
+            VehicleAvailabilityResponse response = vehicleService.searchAvailableVehicles(stationId, startDate, endDate);
             return ResponseEntity.ok()
                     .body(ResponseObject.builder()
                             .statusCode(HttpStatus.OK.value())

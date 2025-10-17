@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,8 +17,8 @@ public class VehicleAvailabilityResponse {
     
     private Long stationId;
     private String stationName;
-    private LocalDateTime searchStartDate;
-    private LocalDateTime searchEndDate;
+    private LocalDate searchStartDate;
+    private LocalDate searchEndDate;
     private List<VehicleTypeAvailability> vehicleTypes;
     
     @Data

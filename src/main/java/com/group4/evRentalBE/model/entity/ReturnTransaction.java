@@ -55,7 +55,7 @@ public class ReturnTransaction {
 
     public enum RefundMethod {
         CASH,      // Hoàn tiền mặt
-        TRANSFER   // Hoàn qua chuyển khoản
+        WALLET     // Hoàn vào ví điện tử
     }
 
     @PrePersist
@@ -68,4 +68,5 @@ public class ReturnTransaction {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    
 }

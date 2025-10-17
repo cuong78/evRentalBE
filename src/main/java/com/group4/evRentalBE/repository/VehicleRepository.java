@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -131,8 +132,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
         """, nativeQuery = true)
     List<Vehicle> findAvailableVehiclesByStation(
             @Param("stationId") Long stationId,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
     );
 
     @Query("SELECT COUNT(v) FROM Vehicle v WHERE v.station.id = :stationId AND v.type.id = :typeId")

@@ -4,6 +4,7 @@ import com.group4.evRentalBE.model.dto.request.VehicleRequest;
 import com.group4.evRentalBE.model.dto.response.VehicleAvailabilityResponse;
 import com.group4.evRentalBE.model.dto.response.VehicleResponse;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,5 +20,5 @@ public interface VehicleService {
     List<VehicleResponse> getVehiclesByStationAndType(Long stationId, Long typeId);
     
     // New method with date range search
-    VehicleAvailabilityResponse searchAvailableVehicles(Long stationId, LocalDateTime startDate,LocalDateTime endDate);
+    VehicleAvailabilityResponse searchAvailableVehicles(Long stationId, LocalDate startDate, LocalDate endDate);
 }
