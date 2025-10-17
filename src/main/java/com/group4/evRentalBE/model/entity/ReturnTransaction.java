@@ -43,9 +43,6 @@ public class ReturnTransaction {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "returnTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<StaffReturn> staffReturns = new ArrayList<>();
-
 
     public boolean isLateReturn() {
         return returnDate.isAfter(booking.getEndDate());
@@ -58,7 +55,7 @@ public class ReturnTransaction {
 
     public enum RefundMethod {
         CASH,      // Hoàn tiền mặt
-        TRANSFER   // Hoàn qua chuyển khoản
+        WALLET     // Hoàn vào ví điện tử
     }
 
     @PrePersist
@@ -71,4 +68,5 @@ public class ReturnTransaction {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    
 }

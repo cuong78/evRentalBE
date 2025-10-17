@@ -18,8 +18,8 @@ public class Booking {
     private String id;
 
     @ManyToOne
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne
     @JoinColumn(name = "station_id", nullable = false)
@@ -52,22 +52,15 @@ public class Booking {
     @Column
     private LocalDateTime paymentExpiryTime; // Thời hạn thanh toán (10 phút)
 
-    // ✅ COMPOSITION: Booking owns Contract
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private Contract contract;
 
-    // ✅ COMPOSITION: Booking owns ReturnTransaction
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private ReturnTransaction returnTransaction;
 
-    // ✅ COMPOSITION: Booking owns Payments
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Payment> payments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<StaffBooking> staffBookings = new ArrayList<>();
-
-    // ✅ BUSINESS METHODS
     public Double calculateTotalCost() {
         long days = getRentalDays();
         return (days * type.getRentalRate()) + type.getDepositAmount();

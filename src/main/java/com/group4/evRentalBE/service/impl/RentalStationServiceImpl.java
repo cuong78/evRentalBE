@@ -5,10 +5,10 @@ import com.group4.evRentalBE.exception.exceptions.ResourceNotFoundException;
 import com.group4.evRentalBE.mapper.RentalStationMapper;
 import com.group4.evRentalBE.model.dto.request.RentalStationRequest;
 import com.group4.evRentalBE.model.dto.response.RentalStationResponse;
-import com.group4.evRentalBE.model.entity.Admin;
 import com.group4.evRentalBE.model.entity.RentalStation;
-import com.group4.evRentalBE.repository.AdminRepository;
+import com.group4.evRentalBE.model.entity.User;
 import com.group4.evRentalBE.repository.RentalStationRepository;
+import com.group4.evRentalBE.repository.UserRepository;
 import com.group4.evRentalBE.service.RentalStationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class RentalStationServiceImpl implements RentalStationService {
 
     private final RentalStationRepository rentalStationRepository;
-    private final AdminRepository adminRepository;
+    private final UserRepository userRepository;
     private final RentalStationMapper rentalStationMapper;
 
     @Override
@@ -32,14 +32,19 @@ public class RentalStationServiceImpl implements RentalStationService {
             throw new ConflictException("Rental station already exists in this location");
         }
 
-        // Validate admin exists if provided
-        Admin admin = null;
+        // Validate admin user exists if provided
+        User adminUser = null;
         if (rentalStationRequest.getAdminId() != null) {
-            admin = adminRepository.findById(rentalStationRequest.getAdminId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Admin not found with id: " + rentalStationRequest.getAdminId()));
+            adminUser = userRepository.findById(rentalStationRequest.getAdminId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Admin user not found with id: " + rentalStationRequest.getAdminId()));
+            
+            // Check if user has ADMIN role
+            if (!adminUser.hasRole("ADMIN")) {
+                throw new ConflictException("User does not have admin role");
+            }
         }
 
-        RentalStation rentalStation = rentalStationMapper.toEntity(rentalStationRequest, admin);
+        RentalStation rentalStation = rentalStationMapper.toEntity(rentalStationRequest, adminUser);
         RentalStation savedRentalStation = rentalStationRepository.save(rentalStation);
 
         return rentalStationMapper.toResponse(savedRentalStation);
@@ -77,13 +82,19 @@ public class RentalStationServiceImpl implements RentalStationService {
         rentalStation.setCity(rentalStationRequest.getCity());
         rentalStation.setAddress(rentalStationRequest.getAddress());
 
-        // Update admin if provided
+        // Update admin user if provided
         if (rentalStationRequest.getAdminId() != null) {
-            Admin admin = adminRepository.findById(rentalStationRequest.getAdminId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Admin not found with id: " + rentalStationRequest.getAdminId()));
-            rentalStation.setAdmin(admin);
+            User adminUser = userRepository.findById(rentalStationRequest.getAdminId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Admin user not found with id: " + rentalStationRequest.getAdminId()));
+            
+            // Check if user has ADMIN role
+            if (!adminUser.hasRole("ADMIN")) {
+                throw new ConflictException("User does not have admin role");
+            }
+            
+            rentalStation.setAdminUser(adminUser);
         } else {
-            rentalStation.setAdmin(null);
+            rentalStation.setAdminUser(null);
         }
 
         RentalStation updatedRentalStation = rentalStationRepository.save(rentalStation);
@@ -95,8 +106,8 @@ public class RentalStationServiceImpl implements RentalStationService {
         RentalStation rentalStation = rentalStationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("RentalStation not found with id: " + id));
 
-        // Check if station has staff members
-        if (!rentalStation.getStaffMembers().isEmpty()) {
+        // Check if station has staff users
+        if (!rentalStation.getStaffUsers().isEmpty()) {
             throw new ConflictException("Cannot delete rental station. There are staff members associated with this station.");
         }
 
@@ -121,47 +132,5 @@ public class RentalStationServiceImpl implements RentalStationService {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public RentalStationResponse assignAdminToStation(Long stationId, Long adminId) {
-        RentalStation rentalStation = rentalStationRepository.findById(stationId)
-                .orElseThrow(() -> new ResourceNotFoundException("RentalStation not found with id: " + stationId));
 
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new ResourceNotFoundException("Admin not found with id: " + adminId));
-
-        // ✅ SỬ DỤNG BUSINESS METHOD từ entity Admin
-        admin.manageStation(rentalStation);
-
-        Admin savedAdmin = adminRepository.save(admin);
-        return rentalStationMapper.toResponse(rentalStation);
-    }
-
-    @Override
-    public RentalStationResponse removeAdminFromStation(Long stationId) {
-        RentalStation rentalStation = rentalStationRepository.findById(stationId)
-                .orElseThrow(() -> new ResourceNotFoundException("RentalStation not found with id: " + stationId));
-
-        if (rentalStation.getAdmin() == null) {
-            throw new ConflictException("Rental station does not have an admin assigned");
-        }
-
-        Admin admin = rentalStation.getAdmin();
-
-        // ✅ SỬ DỤNG BUSINESS METHOD từ entity Admin
-        admin.removeStation(rentalStation);
-
-        adminRepository.save(admin);
-        return rentalStationMapper.toResponse(rentalStation);
-    }
-
-    @Override
-    public List<RentalStationResponse> getStationsWithoutAdmin() {
-        List<RentalStation> stations = rentalStationRepository.findAll().stream()
-                .filter(station -> station.getAdmin() == null)
-                .collect(Collectors.toList());
-
-        return stations.stream()
-                .map(rentalStationMapper::toResponse)
-                .collect(Collectors.toList());
-    }
 }

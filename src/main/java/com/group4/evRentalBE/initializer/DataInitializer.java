@@ -7,7 +7,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,9 +17,7 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
-    private final AdminRepository adminRepository;
-    private final StaffRepository staffRepository;
-    private final CustomerRepository customerRepository;
+    private final DocumentRepository documentRepository;
     private final VehicleTypeRepository vehicleTypeRepository;
     private final VehicleRepository vehicleRepository;
     private final RentalStationRepository rentalStationRepository;
@@ -38,6 +35,7 @@ public class DataInitializer implements CommandLineRunner {
         initializeVehicleTypes();
         initializeRentalStations();
         initializeUsers();
+        initializeDocuments();
         initializeVehicles();
     }
 
@@ -135,26 +133,18 @@ public class DataInitializer implements CommandLineRunner {
             RentalStation.builder()
                     .city("Ho Chi Minh City")
                     .address("123 Nguyen Van Linh, District 7, Ho Chi Minh City")
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
                     .build(),
             RentalStation.builder()
                     .city("Ho Chi Minh City")
                     .address("456 Le Van Viet, Thu Duc City, Ho Chi Minh City")
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
                     .build(),
             RentalStation.builder()
                     .city("Hanoi")
                     .address("789 Cau Giay, Cau Giay District, Hanoi")
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
                     .build(),
             RentalStation.builder()
                     .city("Da Nang")
                     .address("321 Bach Dang, Hai Chau District, Da Nang")
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
                     .build()
         };
 
@@ -175,86 +165,98 @@ public class DataInitializer implements CommandLineRunner {
                 .phone("0901234567")
                 .password(passwordEncoder.encode("admin123"))
                 .isVerify(true)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .tokenVersion(0)
                 .roles(Set.of(adminRole))
                 .build();
         userRepository.save(adminUser);
 
-        Admin admin = new Admin();
-        admin.setUser(adminUser);
-        admin.setName("System Administrator");
-        admin.setCreatedAt(LocalDateTime.now());
-        admin.setUpdatedAt(LocalDateTime.now());
-        adminRepository.save(admin);
-
         // Assign admin to first station
         RentalStation firstStation = rentalStationRepository.findAll().get(0);
-        firstStation.setAdmin(admin);
+        firstStation.setAdminUser(adminUser);
         rentalStationRepository.save(firstStation);
 
         // Create Staff Users
-        String[] staffNames = {"John Doe", "Jane Smith", "Mike Johnson", "Sarah Wilson"};
+        String[] staffUsernames = {"staff1", "staff2", "staff3", "staff4"};
         String[] staffEmails = {"john@evrental.com", "jane@evrental.com", "mike@evrental.com", "sarah@evrental.com"};
         String[] staffPhones = {"0901234568", "0901234569", "0901234570", "0901234571"};
         
-        for (int i = 0; i < staffNames.length; i++) {
+        var allStations = rentalStationRepository.findAll();
+        for (int i = 0; i < staffUsernames.length; i++) {
             User staffUser = User.builder()
-                    .username("staff" + (i + 1))
+                    .username(staffUsernames[i])
                     .email(staffEmails[i])
                     .phone(staffPhones[i])
                     .password(passwordEncoder.encode("staff123"))
                     .isVerify(true)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
                     .tokenVersion(0)
                     .roles(Set.of(staffRole))
+                    .managedStation(allStations.get(i % allStations.size()))
                     .build();
             userRepository.save(staffUser);
-
-            Staff staff = new Staff();
-            staff.setUser(staffUser);
-            staff.setName(staffNames[i]);
-            staff.setRole("Station Staff");
-            staff.setStation(rentalStationRepository.findAll().get(i % 4));
-            staff.setCreatedAt(LocalDateTime.now());
-            staff.setUpdatedAt(LocalDateTime.now());
-            staffRepository.save(staff);
         }
 
         // Create Customer Users
-        String[] customerNames = {"Alice Brown", "Bob Davis", "Carol Martinez", "David Garcia", "Eva Rodriguez"};
+        String[] customerUsernames = {"customer1", "customer2", "customer3", "customer4", "customer5"};
         String[] customerEmails = {"alice@email.com", "bob@email.com", "carol@email.com", "david@email.com", "eva@email.com"};
         String[] customerPhones = {"0912345678", "0912345679", "0912345680", "0912345681", "0912345682"};
-        String[] customerCCCDs = {"123456789012", "234567890123", "345678901234", "456789012345", "567890123456"};
-        String[] customerGPLXs = {"B1123456", "B2234567", "B3345678", "B4456789", "B5567890"};
 
-        for (int i = 0; i < customerNames.length; i++) {
+        for (int i = 0; i < customerUsernames.length; i++) {
             User customerUser = User.builder()
-                    .username("customer" + (i + 1))
+                    .username(customerUsernames[i])
                     .email(customerEmails[i])
                     .phone(customerPhones[i])
                     .password(passwordEncoder.encode("customer123"))
                     .isVerify(true)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
                     .tokenVersion(0)
                     .roles(Set.of(customerRole))
                     .build();
             userRepository.save(customerUser);
+        }
+    }
 
-            Customer customer = new Customer();
-            customer.setUser(customerUser);
-            customer.setCccd(customerCCCDs[i]);
-            customer.setGplx(customerGPLXs[i]);
-            customer.setCccdExpiry(LocalDate.now().plusYears(10));
-            customer.setGplxExpiry(LocalDate.now().plusYears(5));
-            customer.setCccdPhoto("/photos/cccd_" + (i + 1) + ".jpg");
-            customer.setGplxPhoto("/photos/gplx_" + (i + 1) + ".jpg");
-            customer.setCreatedAt(LocalDateTime.now());
-            customer.setUpdatedAt(LocalDateTime.now());
-            customerRepository.save(customer);
+    private void initializeDocuments() {
+        // Get all customer users
+        var customerUsers = userRepository.findAll().stream()
+                .filter(user -> user.hasRole("CUSTOMER"))
+                .toList();
+
+        String[] cccdNumbers = {"123456789012", "234567890123", "345678901234", "456789012345", "567890123456"};
+        String[] drivingLicenseNumbers = {"B1123456", "B2234567", "B3345678", "B4456789", "B5567890"};
+
+        for (int i = 0; i < customerUsers.size() && i < cccdNumbers.length; i++) {
+            User customerUser = customerUsers.get(i);
+            
+            // Create CCCD document
+            Document cccdDoc = Document.builder()
+                    .user(customerUser)
+                    .documentType(Document.DocumentType.CCCD)
+                    .documentNumber(cccdNumbers[i])
+                    .frontPhoto("/photos/cccd_front_" + (i + 1) + ".jpg")
+                    .backPhoto("/photos/cccd_back_" + (i + 1) + ".jpg")
+                    .issueDate(LocalDateTime.now().minusYears(2))
+                    .expiryDate(LocalDateTime.now().plusYears(8))
+                    .issuedBy("Department of Public Security")
+                    .status(Document.DocumentStatus.VERIFIED)
+                    .verifiedAt(LocalDateTime.now().minusDays(30))
+                    .isDefault(true)
+                    .build();
+            documentRepository.save(cccdDoc);
+
+            // Create Driving License document
+            Document drivingLicenseDoc = Document.builder()
+                    .user(customerUser)
+                    .documentType(Document.DocumentType.DRIVING_LICENSE)
+                    .documentNumber(drivingLicenseNumbers[i])
+                    .frontPhoto("/photos/driving_license_front_" + (i + 1) + ".jpg")
+                    .backPhoto("/photos/driving_license_back_" + (i + 1) + ".jpg")
+                    .issueDate(LocalDateTime.now().minusYears(1))
+                    .expiryDate(LocalDateTime.now().plusYears(4))
+                    .issuedBy("Department of Transport")
+                    .status(Document.DocumentStatus.VERIFIED)
+                    .verifiedAt(LocalDateTime.now().minusDays(15))
+                    .isDefault(false)
+                    .build();
+            documentRepository.save(drivingLicenseDoc);
         }
     }
 
@@ -279,8 +281,6 @@ public class DataInitializer implements CommandLineRunner {
                             .status(i == 0 ? Vehicle.VehicleStatus.MAINTENANCE : Vehicle.VehicleStatus.AVAILABLE)
                             .conditionNotes("Good condition, regular maintenance completed")
                             .photos("/photos/vehicle_" + type.getName().toLowerCase().replace(" ", "_") + "_" + (i + 1) + ".jpg")
-                            .createdAt(LocalDateTime.now())
-                            .updatedAt(LocalDateTime.now())
                             .build();
                     vehicleRepository.save(vehicle);
                 }

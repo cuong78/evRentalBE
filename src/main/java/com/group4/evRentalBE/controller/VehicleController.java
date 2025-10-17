@@ -2,15 +2,19 @@ package com.group4.evRentalBE.controller;
 
 import com.group4.evRentalBE.constant.ResponseObject;
 import com.group4.evRentalBE.model.dto.request.VehicleRequest;
+import com.group4.evRentalBE.model.dto.response.VehicleAvailabilityResponse;
 import com.group4.evRentalBE.model.dto.response.VehicleResponse;
 import com.group4.evRentalBE.service.VehicleService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -165,45 +169,7 @@ public class VehicleController {
         }
     }
 
-    @GetMapping("/available")
-    public ResponseEntity<ResponseObject> getAvailableVehicles() {
-        try {
-            List<VehicleResponse> vehicles = vehicleService.getAvailableVehicles();
-            return ResponseEntity.ok()
-                    .body(ResponseObject.builder()
-                            .statusCode(HttpStatus.OK.value())
-                            .message("Available vehicles retrieved successfully")
-                            .data(vehicles)
-                            .build());
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ResponseObject.builder()
-                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                            .message("Failed to retrieve available vehicles: " + e.getMessage())
-                            .data(null)
-                            .build());
-        }
-    }
 
-    @GetMapping("/available/station/{stationId}")
-    public ResponseEntity<ResponseObject> getAvailableVehiclesByStation(@PathVariable Long stationId) {
-        try {
-            List<VehicleResponse> vehicles = vehicleService.getAvailableVehiclesByStation(stationId);
-            return ResponseEntity.ok()
-                    .body(ResponseObject.builder()
-                            .statusCode(HttpStatus.OK.value())
-                            .message("Available vehicles retrieved successfully")
-                            .data(vehicles)
-                            .build());
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ResponseObject.builder()
-                            .statusCode(HttpStatus.NOT_FOUND.value())
-                            .message(e.getMessage())
-                            .data(null)
-                            .build());
-        }
-    }
 
     @GetMapping("/station/{stationId}/type/{typeId}")
     public ResponseEntity<ResponseObject> getVehiclesByStationAndType(
@@ -216,6 +182,37 @@ public class VehicleController {
                             .statusCode(HttpStatus.OK.value())
                             .message("Vehicles retrieved successfully")
                             .data(vehicles)
+                            .build());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ResponseObject.builder()
+                            .statusCode(HttpStatus.NOT_FOUND.value())
+                            .message(e.getMessage())
+                            .data(null)
+                            .build());
+        }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ResponseObject> searchAvailableVehicles(
+            @RequestParam Long stationId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        try {
+
+            VehicleAvailabilityResponse response = vehicleService.searchAvailableVehicles(stationId, startDate, endDate);
+            return ResponseEntity.ok()
+                    .body(ResponseObject.builder()
+                            .statusCode(HttpStatus.OK.value())
+                            .message("Vehicle availability retrieved successfully")
+                            .data(response)
+                            .build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ResponseObject.builder()
+                            .statusCode(HttpStatus.BAD_REQUEST.value())
+                            .message(e.getMessage())
+                            .data(null)
                             .build());
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

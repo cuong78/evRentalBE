@@ -15,18 +15,8 @@ public class ContractResponse {
     private Long id;
     private String bookingId;
     private Long vehicleId;
-    private String cccd;
+    private Long documentId;
     private String conditionNotes;
-    private String invoiceDetails;
-    private String signaturePhoto;
-    private String vehiclePhoto;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    // Additional fields for frontend display
-    private String customerName;
-    private String vehicleName;
-    private String stationName;
-    private LocalDateTime bookingStartDate;
-    private LocalDateTime bookingEndDate;
 }

@@ -20,14 +20,5 @@ public class ContractRequest {
     @NotNull(message = "Vehicle ID is required")
     private Long vehicleId;
 
-    @NotBlank(message = "CCCD is required")
-    private String cccd;
-
     private String conditionNotes;
-
-    @NotBlank(message = "Signature photo is required")
-    private String signaturePhoto;
-
-    @NotBlank(message = "Vehicle photo is required")
-    private String vehiclePhoto;
 }

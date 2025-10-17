@@ -23,8 +23,5 @@ public class ReturnTransactionRequest {
     @NotNull(message = "Refund method is required")
     private ReturnTransaction.RefundMethod refundMethod;
 
-    // Additional fee fields
     private Double damageFee;
-    private Double cleaningFee;
-    private Boolean isLateReturn;
 }

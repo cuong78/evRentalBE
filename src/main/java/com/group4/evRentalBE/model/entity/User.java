@@ -10,8 +10,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Entity
@@ -42,20 +43,10 @@ public class User implements UserDetails {
     private LocalDateTime updatedAt;
 
     @Column(name = "is_verify", nullable = false)
+    @Builder.Default
     private boolean isVerify = false;
 
     private int tokenVersion;
-
-    // ✅ COMPOSITION: User owns Customer/Staff/Admin
-    // Khi User bị xóa → Customer/Staff/Admin cũng bị xóa
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Customer customer;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Staff staff;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Admin admin;
 
     // ✅ ASSOCIATION: Many-to-Many với Role
     @ManyToMany(fetch = FetchType.EAGER)
@@ -63,7 +54,18 @@ public class User implements UserDetails {
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_name"))
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
+
+    // ✅ ASSOCIATION: User có thể quản lý station (cho STAFF role)
+    @ManyToOne
+    @JoinColumn(name = "managed_station_id")
+    private RentalStation managedStation;
+
+    // ✅ COMPOSITION: User owns Documents
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Document> documents = new ArrayList<>();
 
     // ✅ BUSINESS METHODS
     public Set<String> getAllPermissions() {
@@ -88,6 +90,34 @@ public class User implements UserDetails {
 
     public void removeRole(Role role) {
         this.roles.remove(role);
+    }
+
+    // ✅ DOCUMENT BUSINESS METHODS
+    public Document getDefaultDocument() {
+        return documents.stream()
+                .filter(Document::isDefault)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public List<Document> getValidDocuments() {
+        return documents.stream()
+                .filter(Document::isValid)
+                .collect(Collectors.toList());
+    }
+
+    public void addDocument(Document document) {
+        if (!documents.contains(document)) {
+            documents.add(document);
+            document.setUser(this);
+        }
+    }
+
+    public void setDefaultDocument(Document document) {
+        // Unset current default
+        documents.forEach(Document::unsetDefault);
+        // Set new default
+        document.setAsDefault();
     }
 
     @Override
