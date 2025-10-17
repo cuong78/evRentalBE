@@ -1,8 +1,10 @@
 package com.group4.evRentalBE.service;
 
 import com.group4.evRentalBE.model.dto.request.VehicleRequest;
+import com.group4.evRentalBE.model.dto.response.VehicleAvailabilityResponse;
 import com.group4.evRentalBE.model.dto.response.VehicleResponse;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface VehicleService {
@@ -13,7 +15,9 @@ public interface VehicleService {
     void deleteVehicle(Long id);
     List<VehicleResponse> getVehiclesByStation(Long stationId);
     List<VehicleResponse> getVehiclesByType(Long typeId);
-    List<VehicleResponse> getAvailableVehicles();
-    List<VehicleResponse> getAvailableVehiclesByStation(Long stationId);
+
     List<VehicleResponse> getVehiclesByStationAndType(Long stationId, Long typeId);
+    
+    // New method with date range search
+    VehicleAvailabilityResponse searchAvailableVehicles(Long stationId, LocalDateTime startDate,LocalDateTime endDate);
 }

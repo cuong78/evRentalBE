@@ -4,10 +4,9 @@ import com.group4.evRentalBE.exception.exceptions.ConflictException;
 import com.group4.evRentalBE.exception.exceptions.ResourceNotFoundException;
 import com.group4.evRentalBE.mapper.VehicleMapper;
 import com.group4.evRentalBE.model.dto.request.VehicleRequest;
+import com.group4.evRentalBE.model.dto.response.VehicleAvailabilityResponse;
 import com.group4.evRentalBE.model.dto.response.VehicleResponse;
-import com.group4.evRentalBE.model.entity.Vehicle;
-import com.group4.evRentalBE.model.entity.VehicleType;
-import com.group4.evRentalBE.model.entity.RentalStation;
+import com.group4.evRentalBE.model.entity.*;
 import com.group4.evRentalBE.repository.VehicleRepository;
 import com.group4.evRentalBE.repository.VehicleTypeRepository;
 import com.group4.evRentalBE.repository.RentalStationRepository;
@@ -15,7 +14,9 @@ import com.group4.evRentalBE.service.VehicleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -75,7 +76,6 @@ public class VehicleServiceImpl implements VehicleService {
             vehicle.setStation(rentalStation);
         }
 
-        // ✅ SỬ DỤNG BUSINESS METHOD THAY VÌ SET TRỰC TIẾP
         if (vehicleRequest.getStatus() != null) {
             vehicle.updateStatus(vehicleRequest.getStatus());
         }
@@ -121,21 +121,7 @@ public class VehicleServiceImpl implements VehicleService {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public List<VehicleResponse> getAvailableVehicles() {
-        List<Vehicle> vehicles = vehicleRepository.findByStatus(Vehicle.VehicleStatus.AVAILABLE);
-        return vehicles.stream()
-                .map(vehicleMapper::toResponse)
-                .collect(Collectors.toList());
-    }
 
-    @Override
-    public List<VehicleResponse> getAvailableVehiclesByStation(Long stationId) {
-        List<Vehicle> vehicles = vehicleRepository.findByStationIdAndStatus(stationId, Vehicle.VehicleStatus.AVAILABLE);
-        return vehicles.stream()
-                .map(vehicleMapper::toResponse)
-                .collect(Collectors.toList());
-    }
 
     @Override
     public List<VehicleResponse> getVehiclesByStationAndType(Long stationId, Long typeId) {
@@ -153,5 +139,66 @@ public class VehicleServiceImpl implements VehicleService {
         return vehicles.stream()
                 .map(vehicleMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public VehicleAvailabilityResponse searchAvailableVehicles(Long stationId, LocalDateTime startDate, LocalDateTime endDate) {
+        // Validate dates
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date must be before end date");
+        }
+
+        // Validate station exists
+        RentalStation station = rentalStationRepository.findById(stationId)
+                .orElseThrow(() -> new ResourceNotFoundException("RentalStation not found with id: " + stationId));
+
+        List<Vehicle> allAvailableVehicles = vehicleRepository.findAvailableVehiclesByStation(
+                stationId,
+                startDate ,
+                endDate
+        );
+
+        // Group vehicles by type
+        Map<VehicleType, List<Vehicle>> vehiclesByType = allAvailableVehicles.stream()
+                .collect(Collectors.groupingBy(Vehicle::getType));
+
+        // Build response for each vehicle type
+        List<VehicleAvailabilityResponse.VehicleTypeAvailability> vehicleTypeAvailabilities = 
+                vehiclesByType.entrySet().stream()
+                .map(entry -> {
+                    VehicleType type = entry.getKey();
+                    List<Vehicle> vehicles = entry.getValue();
+                    
+                    // Count total vehicles of this type at station
+                    long totalVehicles = vehicleRepository.countByStationAndType(
+                            stationId,
+                            type.getId()
+                    );
+                    
+                    // Map to VehicleResponse
+                    List<VehicleResponse> vehicleResponses = vehicles.stream()
+                            .map(vehicleMapper::toResponse)
+                            .collect(Collectors.toList());
+                    
+                    return VehicleAvailabilityResponse.VehicleTypeAvailability.builder()
+                            .typeId(type.getId())
+                            .typeName(type.getName())
+                            .depositAmount(type.getDepositAmount())
+                            .rentalRate(type.getRentalRate())
+                            .totalVehicles((int) totalVehicles)
+                            .availableCount(vehicles.size())
+                            .availableVehicles(vehicleResponses)
+                            .build();
+                })
+                .sorted((a, b) -> a.getTypeId().compareTo(b.getTypeId()))
+                .collect(Collectors.toList());
+
+        return VehicleAvailabilityResponse.builder()
+                .stationId(station.getId())
+                .stationName(station.getCity() + " - " + station.getAddress())
+                .searchStartDate(startDate)
+                .searchEndDate(endDate)
+                .vehicleTypes(vehicleTypeAvailabilities)
+                .build();
     }
 }
