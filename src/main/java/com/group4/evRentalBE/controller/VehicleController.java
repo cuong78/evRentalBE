@@ -20,11 +20,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/vehicles")
 @RequiredArgsConstructor
-@SecurityRequirement(name = "api")
+
 public class VehicleController {
 
     private final VehicleService vehicleService;
 
+    @SecurityRequirement(name = "api")
     @PostMapping
     public ResponseEntity<ResponseObject> createVehicle(
             @Valid @RequestBody VehicleRequest vehicleRequest) {
@@ -46,6 +47,7 @@ public class VehicleController {
         }
     }
 
+    @SecurityRequirement(name = "api")
     @GetMapping
     public ResponseEntity<ResponseObject> getAllVehicles() {
         try {
@@ -66,6 +68,7 @@ public class VehicleController {
         }
     }
 
+    @SecurityRequirement(name = "api")
     @GetMapping("/{id}")
     public ResponseEntity<ResponseObject> getVehicleById(@PathVariable Long id) {
         try {
@@ -86,6 +89,7 @@ public class VehicleController {
         }
     }
 
+    @SecurityRequirement(name = "api")
     @PutMapping("/{id}")
     public ResponseEntity<ResponseObject> updateVehicle(
             @PathVariable Long id,
@@ -108,6 +112,7 @@ public class VehicleController {
         }
     }
 
+    @SecurityRequirement(name = "api")
     @DeleteMapping("/{id}")
     public ResponseEntity<ResponseObject> deleteVehicle(@PathVariable Long id) {
         try {
@@ -128,6 +133,7 @@ public class VehicleController {
         }
     }
 
+    @SecurityRequirement(name = "api")
     // Additional endpoints
     @GetMapping("/station/{stationId}")
     public ResponseEntity<ResponseObject> getVehiclesByStation(@PathVariable Long stationId) {
@@ -149,6 +155,7 @@ public class VehicleController {
         }
     }
 
+    @SecurityRequirement(name = "api")
     @GetMapping("/type/{typeId}")
     public ResponseEntity<ResponseObject> getVehiclesByType(@PathVariable Long typeId) {
         try {
@@ -171,6 +178,7 @@ public class VehicleController {
 
 
 
+    @SecurityRequirement(name = "api")
     @GetMapping("/station/{stationId}/type/{typeId}")
     public ResponseEntity<ResponseObject> getVehiclesByStationAndType(
             @PathVariable Long stationId,

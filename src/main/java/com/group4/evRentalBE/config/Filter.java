@@ -50,7 +50,8 @@ public class Filter extends OncePerRequestFilter {
             "/api/facebook-login",
             "/api/reset-password",
             "/api/forgot-password",
-            "/api/verify"
+            "/api/verify",
+            "/api/vehicles/search"
 
             );
 

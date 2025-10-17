@@ -65,8 +65,10 @@ public class SecurityConfig {
                                 "/api/reset-password",
                                 "/api/forgot-password",
                                 "/api/payments/vnpay-return",
-                                "/api/verify"
-                                )
+                                "/api/verify",
+                                "/api/vehicles/search"
+
+                        )
                         .permitAll() // Các endpoint không cần xác thực
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**")
                         .permitAll() // Cho phép truy cập Swagger
