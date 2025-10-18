@@ -24,4 +24,8 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
 
     List<Booking> findByStatusAndPaymentExpiryTimeBefore(Booking.BookingStatus status, LocalDateTime paymentExpiryTime);
     List<Booking> findByUserUserId(Long userId);
+
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.user.userId = :userId AND b.status = 'PENDING'")
+    long countPendingBookingsByUserId(@Param("userId") Long userId);
+    List<Booking> findByUserUserIdAndStatusOrderByCreatedAtDesc(Long userId, Booking.BookingStatus status);
 }

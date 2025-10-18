@@ -45,7 +45,7 @@ public class ReturnTransaction {
 
 
     public boolean isLateReturn() {
-        return returnDate.isAfter(booking.getEndDate());
+        return returnDate.isAfter(booking.getEndDate().atStartOfDay());
     }
 
     public long getOverdueDays() {

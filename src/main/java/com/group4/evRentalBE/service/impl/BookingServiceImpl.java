@@ -1,5 +1,6 @@
 package com.group4.evRentalBE.service.impl;
 
+import com.group4.evRentalBE.exception.exceptions.BusinessRuleException;
 import com.group4.evRentalBE.exception.exceptions.ResourceNotFoundException;
 import com.group4.evRentalBE.model.dto.request.BookingRequest;
 import com.group4.evRentalBE.model.dto.response.BookingResponse;
@@ -43,6 +44,9 @@ public class BookingServiceImpl implements BookingService {
             throw new ResourceNotFoundException("User does not have customer role");
         }
 
+        // BUSINESS RULE: Check if user has any pending bookings
+        validateUserCanCreateBooking(authenticatedUser.getUserId());
+
         RentalStation station = rentalStationRepository.findById(bookingRequest.getStationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Rental station not found"));
 
@@ -63,6 +67,17 @@ public class BookingServiceImpl implements BookingService {
         Booking savedBooking = bookingRepository.save(booking);
 
         return mapToBookingResponse(savedBooking);
+    }
+
+    private void validateUserCanCreateBooking(Long userId) {
+        long pendingBookingsCount = bookingRepository.countPendingBookingsByUserId(userId);
+
+        if (pendingBookingsCount >= 1) {
+            throw new BusinessRuleException(
+                    "Cannot create new booking. You already have a pending booking. " +
+                            "Please complete the payment for your current pending booking or wait for it to expire."
+            );
+        }
     }
 
     @Override
@@ -100,6 +115,40 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+    @Override
+    public List<BookingResponse> getConfirmedBookingsByPhone(String phone) {
+        // Tìm user bằng số điện thoại
+        User user = userRepository.findByPhone(phone)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with phone: " + phone));
+
+        // Lấy danh sách booking confirmed và sắp xếp theo thời gian tạo mới nhất
+        List<Booking> confirmedBookings = bookingRepository.findByUserUserIdAndStatusOrderByCreatedAtDesc(
+                user.getUserId(),
+                Booking.BookingStatus.CONFIRMED
+        );
+
+        return confirmedBookings.stream()
+                .map(this::mapToBookingResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookingResponse> getActiveBookingsByPhone(String phone) {
+        // Tìm user bằng số điện thoại
+        User user = userRepository.findByPhone(phone)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with phone: " + phone));
+
+        // Lấy danh sách booking confirmed và sắp xếp theo thời gian tạo mới nhất
+        List<Booking> confirmedBookings = bookingRepository.findByUserUserIdAndStatusOrderByCreatedAtDesc(
+                user.getUserId(),
+                Booking.BookingStatus.ACTIVE
+        );
+
+        return confirmedBookings.stream()
+                .map(this::mapToBookingResponse)
+                .collect(Collectors.toList());
+    }
+
     private BookingResponse mapToBookingResponse(Booking booking) {
         return BookingResponse.builder()
                 .id(booking.getId())
@@ -115,4 +164,6 @@ public class BookingServiceImpl implements BookingService {
                 .updatedAt(booking.getUpdatedAt())
                 .build();
     }
+
+
 }

@@ -1,14 +1,18 @@
 package com.group4.evRentalBE.controller;
 
 import com.group4.evRentalBE.constant.ResponseObject;
+import com.group4.evRentalBE.exception.exceptions.ResourceNotFoundException;
 import com.group4.evRentalBE.model.dto.request.VehicleRequest;
 import com.group4.evRentalBE.model.dto.response.VehicleAvailabilityResponse;
 import com.group4.evRentalBE.model.dto.response.VehicleResponse;
 import com.group4.evRentalBE.service.VehicleService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -229,6 +233,31 @@ public class VehicleController {
                             .message(e.getMessage())
                             .data(null)
                             .build());
+        }
+    }
+
+    @SecurityRequirement(name = "api")
+    @GetMapping(value = "/station/{stationId}/generate-qr-codes", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(
+            summary = "Generate PDF with QR codes by station",
+            description = "Generate a PDF file containing QR codes for vehicles in a specific station, grouped by vehicle type with optimized layout"
+    )
+    public ResponseEntity<byte[]> generateQRCodePDFByStation(@PathVariable Long stationId) {
+        try {
+            byte[] pdfBytes = vehicleService.generateQRCodePDFByStation(stationId);
+
+            String filename = String.format("vehicle-qr-codes-station-%d.pdf", stationId);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdfBytes);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(("Station not found: " + e.getMessage()).getBytes());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(("Failed to generate PDF: " + e.getMessage()).getBytes());
         }
     }
 }
