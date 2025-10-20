@@ -46,6 +46,7 @@ public class DocumentMapper {
                 .expiryDate(request.getExpiryDate())
                 .issuedBy(request.getIssuedBy())
                 .isDefault(request.isDefault())
+                .status(Document.DocumentStatus.VERIFIED)
                 .build();
     }
 

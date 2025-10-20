@@ -51,8 +51,10 @@ public class Filter extends OncePerRequestFilter {
             "/api/reset-password",
             "/api/forgot-password",
             "/api/verify",
-            "/api/vehicles/search"
-
+            "/api/vehicles/search",
+            "/api/rental-stations",
+            "/api/rental-stations/*",
+            "/api/rental-stations/city/*"
             );
 
     // kiểm tra xem request có thuộc danh sách publicAPI
