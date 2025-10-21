@@ -20,4 +20,11 @@ public interface PaymentService {
      */
     Map<String, String> processVnPayRefund(Payment originalPayment, Double refundAmount, String description);
 
+    /**
+     * Process payment through customer's wallet
+     * @param bookingId The booking ID to pay for
+     * @return ResponseObject containing the payment result
+     */
+    ResponseObject payWithWallet(String bookingId);
+
 }

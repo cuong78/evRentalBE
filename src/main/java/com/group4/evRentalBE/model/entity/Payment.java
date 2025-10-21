@@ -64,8 +64,8 @@ public class Payment {
 
     public enum PaymentMethod {
         CASH,             // Tiền mặt
-        VNPAY,           // VNPay
-
+        VNPAY,            // VNPay
+        WALLET            // Ví điện tử
     }
 
     @PrePersist

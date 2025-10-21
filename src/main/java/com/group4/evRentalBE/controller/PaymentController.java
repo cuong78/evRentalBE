@@ -21,6 +21,11 @@ public class PaymentController {
         return paymentService.createVnPayUrl(bookingId);
     }
 
+    @PostMapping("/wallet/{bookingId}")
+    public ResponseObject payWithWallet(@PathVariable String bookingId) {
+        return paymentService.payWithWallet(bookingId);
+    }
+
     @GetMapping("/vnpay-return")
     public Map<String, String> handleVNPayReturn(@RequestParam Map<String, String> params) {
         return paymentService.handleVNPayReturn(params);

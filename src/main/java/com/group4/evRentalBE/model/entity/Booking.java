@@ -43,6 +43,9 @@ public class Booking {
 
     @Column(nullable = false)
     private Double totalPayment; // Tổng số tiền phải thanh toán (deposit + rental fee)
+    
+    @Column(nullable = true)
+    private Boolean isPaidByWallet = false; // Đánh dấu đã thanh toán bằng ví
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
