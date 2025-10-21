@@ -54,7 +54,8 @@ public class Filter extends OncePerRequestFilter {
             "/api/vehicles/search",
             "/api/rental-stations",
             "/api/rental-stations/*",
-            "/api/rental-stations/city/*"
+            "/api/rental-stations/city/*",
+            "/api/wallet/topups/vnpay-return"
             );
 
     // kiểm tra xem request có thuộc danh sách publicAPI
