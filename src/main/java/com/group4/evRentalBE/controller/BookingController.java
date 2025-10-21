@@ -36,4 +36,22 @@ public class BookingController {
         List<BookingResponse> responses = bookingService.getBookingsByCustomer(userId);
         return ResponseEntity.ok(responses);
     }
+
+    @GetMapping("/phone/{phone}/confirmed")
+    public ResponseEntity<List<BookingResponse>> getConfirmedBookingsByPhone(
+            @PathVariable String phone) {
+
+        List<BookingResponse> responses = bookingService.getConfirmedBookingsByPhone(phone);
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/phone/{phone}/active")
+    public ResponseEntity<List<BookingResponse>> getActiveBookingsByPhone(
+            @PathVariable String phone) {
+
+        List<BookingResponse> responses = bookingService.getActiveBookingsByPhone(phone);
+        return ResponseEntity.ok(responses);
+    }
+
+
 }

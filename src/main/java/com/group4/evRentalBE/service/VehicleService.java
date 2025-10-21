@@ -21,4 +21,7 @@ public interface VehicleService {
     
     // New method with date range search
     VehicleAvailabilityResponse searchAvailableVehicles(Long stationId, LocalDate startDate, LocalDate endDate);
+
+    byte[] generateQRCodePDFByStation(Long stationId) throws Exception;
+
 }

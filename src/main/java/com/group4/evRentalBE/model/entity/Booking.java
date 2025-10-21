@@ -2,6 +2,8 @@ package com.group4.evRentalBE.model.entity;
 
 import lombok.*;
 import jakarta.persistence.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -30,10 +32,10 @@ public class Booking {
     private VehicleType type;
 
     @Column(nullable = false)
-    private LocalDateTime startDate;
+    private LocalDate startDate;
 
     @Column(nullable = false)
-    private LocalDateTime endDate;
+    private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -70,19 +72,7 @@ public class Booking {
         return ChronoUnit.DAYS.between(startDate, endDate);
     }
 
-    public boolean isActive() {
-        LocalDateTime now = LocalDateTime.now();
-        return status == BookingStatus.ACTIVE
-                && now.isAfter(startDate)
-                && now.isBefore(endDate)
-                && returnTransaction == null;
-    }
 
-    public boolean canCancel() {
-        return LocalDateTime.now().isBefore(startDate.minusHours(24))
-                && (status == BookingStatus.PENDING || status == BookingStatus.CONFIRMED)
-                && contract == null;
-    }
 
     public boolean isPaymentExpired() {
         return paymentExpiryTime != null && LocalDateTime.now().isAfter(paymentExpiryTime);

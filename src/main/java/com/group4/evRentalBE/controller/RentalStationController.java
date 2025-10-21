@@ -17,12 +17,13 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/rental-stations")
 @RequiredArgsConstructor
-@SecurityRequirement(name = "api")
+
 public class RentalStationController {
 
     private final RentalStationService rentalStationService;
 
     @PostMapping
+    @SecurityRequirement(name = "api")
     public ResponseEntity<ResponseObject> createRentalStation(
             @Valid @RequestBody RentalStationRequest rentalStationRequest) {
         try {
@@ -84,6 +85,7 @@ public class RentalStationController {
     }
 
     @PutMapping("/{id}")
+    @SecurityRequirement(name = "api")
     public ResponseEntity<ResponseObject> updateRentalStation(
             @PathVariable Long id,
             @Valid @RequestBody RentalStationRequest rentalStationRequest) {
@@ -106,6 +108,7 @@ public class RentalStationController {
     }
 
     @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "api")
     public ResponseEntity<ResponseObject> deleteRentalStation(@PathVariable Long id) {
         try {
             rentalStationService.deleteRentalStation(id);
@@ -125,7 +128,6 @@ public class RentalStationController {
         }
     }
 
-    // Additional endpoints
     @GetMapping("/city/{city}")
     public ResponseEntity<ResponseObject> getRentalStationsByCity(@PathVariable String city) {
         try {
