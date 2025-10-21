@@ -1,6 +1,5 @@
 package com.group4.evRentalBE.model.dto.request;
 
-import com.group4.evRentalBE.model.entity.ReturnTransaction;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,9 +18,6 @@ public class ReturnTransactionRequest {
 
     private String conditionNotes;
     private String photos;
-
-    @NotNull(message = "Refund method is required")
-    private ReturnTransaction.RefundMethod refundMethod;
 
     private Double damageFee;
 }

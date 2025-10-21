@@ -5,8 +5,6 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "ReturnTransaction")
@@ -29,10 +27,6 @@ public class ReturnTransaction {
     @Column(columnDefinition = "double precision DEFAULT 0")
     private Double additionalFees = 0.0;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private RefundMethod refundMethod;
-
     @Column(nullable = false)
     private Double refundAmount = 0.0;
 
@@ -51,11 +45,6 @@ public class ReturnTransaction {
     public long getOverdueDays() {
         if (!isLateReturn()) return 0;
         return ChronoUnit.DAYS.between(booking.getEndDate(), returnDate);
-    }
-
-    public enum RefundMethod {
-        CASH,      // Hoàn tiền mặt
-        WALLET     // Hoàn vào ví điện tử
     }
 
     @PrePersist

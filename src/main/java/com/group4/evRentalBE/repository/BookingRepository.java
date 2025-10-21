@@ -27,5 +27,10 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
 
     @Query("SELECT COUNT(b) FROM Booking b WHERE b.user.userId = :userId AND b.status = 'PENDING'")
     long countPendingBookingsByUserId(@Param("userId") Long userId);
+    
     List<Booking> findByUserUserIdAndStatusOrderByCreatedAtDesc(Long userId, Booking.BookingStatus status);
+    
+    // Count methods for user profile
+    long countByUserUserId(Long userId);
+    long countByUserUserIdAndStatus(Long userId, Booking.BookingStatus status);
 }
