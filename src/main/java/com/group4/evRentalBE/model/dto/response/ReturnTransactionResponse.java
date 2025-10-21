@@ -1,6 +1,5 @@
 package com.group4.evRentalBE.model.dto.response;
 
-import com.group4.evRentalBE.model.entity.ReturnTransaction;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +17,6 @@ public class ReturnTransactionResponse {
     private LocalDateTime returnDate;
     private Double additionalFees;
     private Double refundAmount;
-    private ReturnTransaction.RefundMethod refundMethod;
     private String conditionNotes;
     private String photos;
     private LocalDateTime createdAt;

@@ -63,7 +63,6 @@ public class Payment {
     }
 
     public enum PaymentMethod {
-        CASH,             // Tiền mặt
         VNPAY,            // VNPay
         WALLET            // Ví điện tử
     }

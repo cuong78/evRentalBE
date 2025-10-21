@@ -5,9 +5,9 @@ import com.group4.evRentalBE.model.dto.request.ReturnTransactionRequest;
 import com.group4.evRentalBE.model.dto.response.ReturnTransactionResponse;
 import com.group4.evRentalBE.model.entity.*;
 import com.group4.evRentalBE.repository.*;
-import com.group4.evRentalBE.service.PaymentService;
 import com.group4.evRentalBE.service.ReturnTransactionService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,13 +16,14 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReturnTransactionServiceImpl implements ReturnTransactionService {
 
     private final ReturnTransactionRepository returnTransactionRepository;
     private final BookingRepository bookingRepository;
     private final VehicleRepository vehicleRepository;
     private final PaymentRepository paymentRepository;
-    private final PaymentService paymentService;
+    private final WalletRepository walletRepository;
 
     @Override
     @Transactional
@@ -48,7 +49,6 @@ public class ReturnTransactionServiceImpl implements ReturnTransactionService {
         returnTransaction.setReturnDate(LocalDateTime.now());
         returnTransaction.setConditionNotes(returnTransactionRequest.getConditionNotes());
         returnTransaction.setPhotos(returnTransactionRequest.getPhotos());
-        returnTransaction.setRefundMethod(returnTransactionRequest.getRefundMethod());
 
         // Calculate additional fees and refund amount
         calculateFeesAndRefund(returnTransaction, booking, returnTransactionRequest);
@@ -112,15 +112,24 @@ public class ReturnTransactionServiceImpl implements ReturnTransactionService {
         String description = "Refund for booking " + booking.getId() +
                 ". Additional fees: " + returnTransaction.getAdditionalFees();
 
+        User customer = booking.getUser();
+        
+        // Find customer's wallet
+        Wallet wallet = walletRepository.findByUserUserId(customer.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found for user"));
 
-        // Create manual refund payment (for CASH or if VNPay refund failed)
+        // Convert refund amount to VND (long)
+        long refundAmountVnd = returnTransaction.getRefundAmount().longValue();
+
+        // Credit wallet
+        wallet.credit(refundAmountVnd);
+        walletRepository.save(wallet);
+
+        // Create refund payment record
         Payment refundPayment = Payment.builder()
                 .booking(booking)
                 .type(Payment.PaymentType.REFUND)
-                .method(returnTransaction.getRefundMethod() ==
-                        ReturnTransaction.RefundMethod.CASH ?
-                        Payment.PaymentMethod.CASH :
-                        Payment.PaymentMethod.VNPAY) // VNPAY for TRANSFER method
+                .method(Payment.PaymentMethod.WALLET) // Always refund to wallet
                 .status(Payment.PaymentStatus.SUCCESS)
                 .amount(returnTransaction.getRefundAmount())
                 .transactionId("REFUND_" + UUID.randomUUID().toString())
@@ -129,6 +138,9 @@ public class ReturnTransactionServiceImpl implements ReturnTransactionService {
                 .build();
 
         paymentRepository.save(refundPayment);
+
+        log.info("Refunded {} VND to wallet for user {} (booking: {})", 
+                refundAmountVnd, customer.getUserId(), booking.getId());
     }
 
     private ReturnTransactionResponse mapToReturnTransactionResponse(ReturnTransaction returnTransaction) {
@@ -138,7 +150,6 @@ public class ReturnTransactionServiceImpl implements ReturnTransactionService {
                 .returnDate(returnTransaction.getReturnDate())
                 .additionalFees(returnTransaction.getAdditionalFees())
                 .refundAmount(returnTransaction.getRefundAmount())
-                .refundMethod(returnTransaction.getRefundMethod())
                 .conditionNotes(returnTransaction.getConditionNotes())
                 .photos(returnTransaction.getPhotos())
                 .createdAt(returnTransaction.getCreatedAt())
