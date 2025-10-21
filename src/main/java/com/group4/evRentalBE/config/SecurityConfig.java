@@ -69,6 +69,7 @@ public class SecurityConfig {
                                 "/api/vehicles/search",
                                 "/api/rental-stations",
                                 "/api/rental-stations/*",
+                                "/api/wallet/topups/vnpay-return",
                                 "/api/rental-stations/city/*"
                         )
                         .permitAll() // Các endpoint không cần xác thực

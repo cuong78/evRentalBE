@@ -48,7 +48,10 @@ public class DataInitializer implements CommandLineRunner {
             new Permission("Payment Management", "PAYMENT_MANAGE", "Manage payments and transactions"),
             new Permission("Report Access", "REPORT_ACCESS", "Access reports and analytics"),
             new Permission("Customer Support", "CUSTOMER_SUPPORT", "Handle customer support"),
-            new Permission("System Settings", "SYSTEM_SETTINGS", "Manage system configurations")
+            new Permission("System Settings", "SYSTEM_SETTINGS", "Manage system configurations"),
+            new Permission("Wallet View", "WALLET_VIEW", "View wallet balance & history"),
+            new Permission("Wallet Topup", "WALLET_TOPUP", "Create topup bill and get VNPay URL"),
+                new Permission("Wallet Adjust", "WALLET_ADJUST", "Adjust wallet balance manually")
         };
 
         for (Permission permission : permissions) {
