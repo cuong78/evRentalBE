@@ -37,7 +37,6 @@ public class WalletController {
         return ResponseEntity.ok(Map.of("billId", billId));
     }
 
-    // API #2: sinh URL VNPay để FE redirect
     @PostMapping("/{billId}/vnpay-url")
     public ResponseEntity<ResponseObject> buildVnpUrl(
             @PathVariable String billId,
@@ -54,7 +53,6 @@ public class WalletController {
         );
     }
 
-    // VNPay returnUrl (GET/POST đều được — tùy cấu hình VNPay)
     @RequestMapping(value="/vnpay-return", method={RequestMethod.GET, RequestMethod.POST})
     @Hidden
     public ResponseEntity<Map<String,String>> vnpayReturn(@RequestParam Map<String,String> params) {

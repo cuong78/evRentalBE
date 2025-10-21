@@ -208,8 +208,8 @@ public class VehicleController {
     @GetMapping("/search")
     public ResponseEntity<ResponseObject> searchAvailableVehicles(
             @RequestParam Long stationId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam  LocalDate startDate,
+            @RequestParam  LocalDate endDate) {
         try {
 
             VehicleAvailabilityResponse response = vehicleService.searchAvailableVehicles(stationId, startDate, endDate);
