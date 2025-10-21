@@ -2,16 +2,21 @@ package com.group4.evRentalBE.service.impl;
 
 import com.group4.evRentalBE.constant.ResponseObject;
 import com.group4.evRentalBE.exception.exceptions.ResourceNotFoundException;
+import com.group4.evRentalBE.exception.exceptions.BusinessRuleException;
 import com.group4.evRentalBE.model.entity.Booking;
 import com.group4.evRentalBE.model.entity.Payment;
+import com.group4.evRentalBE.model.entity.Wallet;
 import com.group4.evRentalBE.repository.BookingRepository;
 import com.group4.evRentalBE.repository.PaymentRepository;
+import com.group4.evRentalBE.repository.WalletRepository;
 import com.group4.evRentalBE.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -35,6 +40,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
+    private final WalletRepository walletRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${payment.vnpay.tmn-code}")
@@ -46,7 +52,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Value("${payment.vnpay.url}")
     private String vnpUrl;
 
-    @Value("${payment.vnpay.return-url}")
+    @Value("${frontend.url.payment.return}")
     private String vnpReturnUrl;
 
     @Value("${payment.vnpay.ip-address}")
@@ -332,6 +338,102 @@ public class PaymentServiceImpl implements PaymentService {
             errorResponse.put("vnp_ResponseCode", "99");
             errorResponse.put("vnp_Message", "Error processing refund: " + e.getMessage());
             return errorResponse;
+        }
+    }
+
+    @Override
+    @Transactional
+    public ResponseObject payWithWallet(String bookingId) {
+        // Get authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        com.group4.evRentalBE.model.entity.User currentUser = (com.group4.evRentalBE.model.entity.User) authentication.getPrincipal();
+        
+        // Find booking
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + bookingId));
+
+        // Validate booking status
+        if (booking.getStatus() != Booking.BookingStatus.PENDING) {
+            throw new BusinessRuleException("Can only pay for pending bookings. Current status: " + booking.getStatus());
+        }
+
+        // Check if payment is expired
+        if (booking.isPaymentExpired()) {
+            booking.setStatus(Booking.BookingStatus.CANCELLED);
+            bookingRepository.save(booking);
+            throw new BusinessRuleException("Payment time has expired. Booking has been cancelled.");
+        }
+
+        // Verify that the booking belongs to the current user
+        if (!booking.getUser().getUserId().equals(currentUser.getUserId())) {
+            throw new BusinessRuleException("You can only pay for your own bookings");
+        }
+
+        // Find user's wallet
+        Wallet wallet = walletRepository.findByUserUserId(currentUser.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found for user"));
+
+        // Calculate payment amount (convert from Double to Long for VND)
+        long paymentAmountVnd = booking.getTotalPayment().longValue();
+
+        // Check if wallet has sufficient balance
+        if (wallet.getBalance() < paymentAmountVnd) {
+            Map<String, Object> errorData = new HashMap<>();
+            errorData.put("required", paymentAmountVnd);
+            errorData.put("current", wallet.getBalance());
+            errorData.put("shortage", paymentAmountVnd - wallet.getBalance());
+            
+            return new ResponseObject(
+                    400,
+                    "Insufficient wallet balance. Need " + paymentAmountVnd + " VND, but only have " + wallet.getBalance() + " VND",
+                    errorData
+            );
+        }
+
+        try {
+            // Deduct amount from wallet
+            wallet.setBalance(wallet.getBalance() - paymentAmountVnd);
+            walletRepository.save(wallet);
+
+            // Create payment record
+            Payment payment = Payment.builder()
+                    .booking(booking)
+                    .type(Payment.PaymentType.DEPOSIT)
+                    .method(Payment.PaymentMethod.WALLET)
+                    .status(Payment.PaymentStatus.SUCCESS)
+                    .amount(booking.getTotalPayment())
+                    .transactionId("WALLET_" + UUID.randomUUID().toString())
+                    .description("Payment for booking " + bookingId + " via Wallet")
+                    .paymentDate(LocalDateTime.now())
+                    .build();
+            
+            paymentRepository.save(payment);
+
+            // Update booking status
+            booking.setStatus(Booking.BookingStatus.CONFIRMED);
+            booking.setIsPaidByWallet(true);
+            booking.setPaymentMethod(Payment.PaymentMethod.WALLET);
+            bookingRepository.save(booking);
+
+            // Prepare success response
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("bookingId", bookingId);
+            responseData.put("paymentId", payment.getId());
+            responseData.put("amount", paymentAmountVnd);
+            responseData.put("remainingBalance", wallet.getBalance());
+            responseData.put("paymentMethod", "WALLET");
+            responseData.put("status", "SUCCESS");
+            responseData.put("transactionId", payment.getTransactionId());
+            responseData.put("paymentDate", payment.getPaymentDate());
+
+            log.info("Wallet payment successful for booking: {}, amount: {}, user: {}", 
+                    bookingId, paymentAmountVnd, currentUser.getUserId());
+
+            return new ResponseObject(200, "Payment successful via Wallet", responseData);
+
+        } catch (Exception e) {
+            log.error("Error processing wallet payment for booking {}: {}", bookingId, e.getMessage(), e);
+            throw new BusinessRuleException("Failed to process wallet payment: " + e.getMessage());
         }
     }
 }
