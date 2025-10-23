@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -21,8 +22,8 @@ public class DocumentResponse {
     private String documentNumber;
     private String frontPhoto;
     private String backPhoto;
-    private LocalDateTime issueDate;
-    private LocalDateTime expiryDate;
+    private LocalDate issueDate;
+    private LocalDate expiryDate;
     private String issuedBy;
     private Document.DocumentStatus status;
     private LocalDateTime verifiedAt;

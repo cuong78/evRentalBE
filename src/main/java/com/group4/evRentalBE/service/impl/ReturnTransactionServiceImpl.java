@@ -6,6 +6,7 @@ import com.group4.evRentalBE.model.dto.response.ReturnTransactionResponse;
 import com.group4.evRentalBE.model.entity.*;
 import com.group4.evRentalBE.repository.*;
 import com.group4.evRentalBE.service.ReturnTransactionService;
+import com.group4.evRentalBE.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class ReturnTransactionServiceImpl implements ReturnTransactionService {
     private final VehicleRepository vehicleRepository;
     private final PaymentRepository paymentRepository;
     private final WalletRepository walletRepository;
+    private final FileUploadService fileUploadService;
 
     @Override
     @Transactional
@@ -43,17 +45,28 @@ public class ReturnTransactionServiceImpl implements ReturnTransactionService {
 
         Vehicle vehicle = contract.getVehicle();
 
+        // Upload photos to cloud
+        String photosUrl = null;
+        if (returnTransactionRequest.getPhotos() != null && returnTransactionRequest.getPhotos().length > 0) {
+            photosUrl = fileUploadService.uploadMultipleFiles(
+                    returnTransactionRequest.getPhotos(), 
+                    "returns"
+            );
+            log.info("Return transaction photos uploaded: {}", photosUrl);
+        }
+
         // Create return transaction
         ReturnTransaction returnTransaction = new ReturnTransaction();
         returnTransaction.setBooking(booking);
         returnTransaction.setReturnDate(LocalDateTime.now());
         returnTransaction.setConditionNotes(returnTransactionRequest.getConditionNotes());
-        returnTransaction.setPhotos(returnTransactionRequest.getPhotos());
+        returnTransaction.setPhotos(photosUrl); // Store comma-separated URLs
 
         // Calculate additional fees and refund amount
         calculateFeesAndRefund(returnTransaction, booking, returnTransactionRequest);
 
         ReturnTransaction savedReturnTransaction = returnTransactionRepository.save(returnTransaction);
+        log.info("Return transaction created with ID: {}", savedReturnTransaction.getId());
 
         // Update vehicle status to AVAILABLE
         vehicle.returnVehicle();

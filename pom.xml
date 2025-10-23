@@ -179,6 +179,13 @@
 			<version>2.0.27</version>
 		</dependency>
 
+		<!-- Cloudinary for image upload -->
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http44</artifactId>
+			<version>1.36.0</version>
+		</dependency>
+
 
 
 

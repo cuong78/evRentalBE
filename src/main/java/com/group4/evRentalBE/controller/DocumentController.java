@@ -4,8 +4,11 @@ import com.group4.evRentalBE.model.dto.request.DocumentRequest;
 import com.group4.evRentalBE.model.dto.response.DocumentResponse;
 import com.group4.evRentalBE.service.DocumentService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,12 +22,14 @@ public class DocumentController {
     private final DocumentService documentService;
 
     /**
-     * Create a new document
+     * Create a new document with file upload
      * @param documentRequest the document request
      * @return the created document response
      */
-    @PostMapping
-    public ResponseEntity<DocumentResponse> createDocument(@RequestBody DocumentRequest documentRequest) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN', 'CUSTOMER')")
+    public ResponseEntity<DocumentResponse> createDocument(
+            @Valid @ModelAttribute DocumentRequest documentRequest) {
         DocumentResponse response = documentService.createDocument(documentRequest);
         return ResponseEntity.ok(response);
     }

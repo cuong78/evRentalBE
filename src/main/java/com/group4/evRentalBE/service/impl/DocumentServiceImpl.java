@@ -10,7 +10,9 @@ import com.group4.evRentalBE.model.entity.User;
 import com.group4.evRentalBE.repository.DocumentRepository;
 import com.group4.evRentalBE.repository.UserRepository;
 import com.group4.evRentalBE.service.DocumentService;
+import com.group4.evRentalBE.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,11 +23,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final DocumentMapper documentMapper;
+    private final FileUploadService fileUploadService;
 
     @Override
     @Transactional
@@ -34,11 +38,28 @@ public class DocumentServiceImpl implements DocumentService {
         User user = userRepository.findById(documentRequest.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Create the document
-        Document document = documentMapper.toEntity(documentRequest, user);
+        // Upload photos to cloud
+        String frontPhotoUrl = null;
+        String backPhotoUrl = null;
+
+        if (documentRequest.getFrontPhoto() != null && !documentRequest.getFrontPhoto().isEmpty()) {
+            frontPhotoUrl = fileUploadService.uploadFile(
+                    documentRequest.getFrontPhoto(), 
+                    "documents"
+            );
+            log.info("Front photo uploaded: {}", frontPhotoUrl);
+        }
+
+        if (documentRequest.getBackPhoto() != null && !documentRequest.getBackPhoto().isEmpty()) {
+            backPhotoUrl = fileUploadService.uploadFile(
+                    documentRequest.getBackPhoto(), 
+                    "documents"
+            );
+            log.info("Back photo uploaded: {}", backPhotoUrl);
+        }
 
         // If this is set as default, unset any other default documents for this user
-        if (document.isDefault()) {
+        if (documentRequest.isDefault()) {
             Document defaultDocument = documentRepository.findByUserAndIsDefaultTrue(user);
             if (defaultDocument != null) {
                 defaultDocument.unsetDefault();
@@ -46,8 +67,23 @@ public class DocumentServiceImpl implements DocumentService {
             }
         }
 
+        // Create the document with uploaded URLs
+        Document document = Document.builder()
+                .user(user)
+                .documentType(documentRequest.getDocumentType())
+                .documentNumber(documentRequest.getDocumentNumber())
+                .frontPhoto(frontPhotoUrl)
+                .backPhoto(backPhotoUrl)
+                .issueDate(documentRequest.getIssueDate())
+                .expiryDate(documentRequest.getExpiryDate())
+                .issuedBy(documentRequest.getIssuedBy())
+                .isDefault(documentRequest.isDefault())
+                .status(Document.DocumentStatus.VERIFIED)
+                .build();
+
         // Save the document
         Document savedDocument = documentRepository.save(document);
+        log.info("Document created with ID: {}", savedDocument.getId());
 
         // Return the response
         return documentMapper.toResponse(savedDocument);
@@ -112,7 +148,18 @@ public class DocumentServiceImpl implements DocumentService {
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
 
+        // Delete photos from cloud
+        if (document.getFrontPhoto() != null) {
+            fileUploadService.deleteFile(document.getFrontPhoto());
+            log.info("Front photo deleted from cloud");
+        }
+        if (document.getBackPhoto() != null) {
+            fileUploadService.deleteFile(document.getBackPhoto());
+            log.info("Back photo deleted from cloud");
+        }
+
         // Delete the document
         documentRepository.delete(document);
+        log.info("Document deleted with ID: {}", id);
     }
 }
