@@ -15,6 +15,5 @@ public class VehicleTypeResponse {
     private String name;
     private Double depositAmount;
     private Double rentalRate;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+
 }

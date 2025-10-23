@@ -2,6 +2,7 @@ package com.group4.evRentalBE.service;
 
 import com.group4.evRentalBE.model.dto.request.VehicleTypeRequest;
 import com.group4.evRentalBE.model.dto.response.VehicleTypeResponse;
+import com.group4.evRentalBE.model.dto.response.VehicleTypeAvailabilityResponse;
 
 import java.util.List;
 
@@ -12,4 +13,6 @@ public interface VehicleTypeService {
     VehicleTypeResponse updateVehicleType(Long id, VehicleTypeRequest vehicleTypeRequest);
     void deleteVehicleType(Long id);
     boolean existsByName(String name);
+    List<VehicleTypeAvailabilityResponse> getVehicleTypesByStation(Long stationId);
+    List<VehicleTypeAvailabilityResponse> getVehicleTypesByStationAndDateRange(Long stationId, String startDate, String endDate);
 }

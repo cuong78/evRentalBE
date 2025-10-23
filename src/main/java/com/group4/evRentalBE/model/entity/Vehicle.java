@@ -4,6 +4,8 @@ package com.group4.evRentalBE.model.entity;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "Vehicle")
@@ -11,17 +13,16 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Vehicle {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ✅ AGGREGATION: Vehicle thuộc VehicleType (không cascade)
     @ManyToOne
     @JoinColumn(name = "type_id", nullable = false)
     private VehicleType type;
 
-    // ✅ AGGREGATION: Vehicle ở RentalStation (không cascade)
     @ManyToOne
     @JoinColumn(name = "station_id", nullable = false)
     private RentalStation station;
@@ -37,11 +38,10 @@ public class Vehicle {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // ✅ COMPOSITION: Contract thuộc về Vehicle (nếu có)
-    @OneToOne(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Contract contract;
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Contract> contracts = new ArrayList<>();
 
-    // ✅ BUSINESS METHODS
     public boolean isAvailable() {
         return this.status == VehicleStatus.AVAILABLE;
     }
@@ -76,11 +76,7 @@ public class Vehicle {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void sendToMaintenance(String notes) {
-        this.status = VehicleStatus.MAINTENANCE;
-        this.conditionNotes = notes;
-        this.updatedAt = LocalDateTime.now();
-    }
+
 
     public enum VehicleStatus {
         AVAILABLE, RENTED, DAMAGED, MAINTENANCE

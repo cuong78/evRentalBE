@@ -1,13 +1,13 @@
 package com.group4.evRentalBE.model.entity;
 
-
 import lombok.*;
 import jakarta.persistence.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "Booking")
@@ -20,8 +20,8 @@ public class Booking {
     private String id;
 
     @ManyToOne
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne
     @JoinColumn(name = "station_id", nullable = false)
@@ -32,23 +32,20 @@ public class Booking {
     private VehicleType type;
 
     @Column(nullable = false)
-    private LocalDateTime startDate;
+    private LocalDate startDate;
 
     @Column(nullable = false)
-    private LocalDateTime endDate;
+    private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Payment.PaymentMethod paymentMethod;  // Phương thức thanh toán mặc định
+    private Payment.PaymentMethod paymentMethod;
 
     @Column(nullable = false)
-    private Double depositPaid = 0.0;
-
-    @Column(nullable = false)
-    private Double rentalFee;
-
-    @Column(nullable = false)
-    private Double totalInitialPayment = 0.0;
+    private Double totalPayment; // Tổng số tiền phải thanh toán (deposit + rental fee)
+    
+    @Column(nullable = true)
+    private Boolean isPaidByWallet = false; // Đánh dấu đã thanh toán bằng ví
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -57,131 +54,53 @@ public class Booking {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // ✅ COMPOSITION: Booking owns Contract
+    @Column
+    private LocalDateTime paymentExpiryTime; // Thời hạn thanh toán (10 phút)
+
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private Contract contract;
 
-    // ✅ COMPOSITION: Booking owns ReturnTransaction
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private ReturnTransaction returnTransaction;
 
-    // ✅ COMPOSITION: Booking owns Payments
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Payment> payments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<StaffBooking> staffBookings = new ArrayList<>();
-
-    // ✅ BUSINESS METHODS
     public Double calculateTotalCost() {
         long days = getRentalDays();
-        return days * rentalFee;
+        return (days * type.getRentalRate()) + type.getDepositAmount();
     }
 
     public long getRentalDays() {
         return ChronoUnit.DAYS.between(startDate, endDate);
     }
 
-    public boolean isActive() {
-        LocalDateTime now = LocalDateTime.now();
-        return status == BookingStatus.ACTIVE
-                && now.isAfter(startDate)
-                && now.isBefore(endDate)
-                && returnTransaction == null;
+
+
+    public boolean isPaymentExpired() {
+        return paymentExpiryTime != null && LocalDateTime.now().isAfter(paymentExpiryTime);
     }
 
-    public boolean canCancel() {
-        return LocalDateTime.now().isBefore(startDate.minusHours(24))
-                && (status == BookingStatus.PENDING || status == BookingStatus.CONFIRMED)
-                && contract == null;
-    }
 
-    public boolean isOverdue() {
-        return LocalDateTime.now().isAfter(endDate)
-                && status == BookingStatus.ACTIVE
-                && returnTransaction == null;
-    }
 
-    public boolean isPending() {
-        return status == BookingStatus.PENDING;
-    }
 
-    public boolean isCompleted() {
-        return status == BookingStatus.COMPLETED && returnTransaction != null;
-    }
-
-    // ✅ PAYMENT RELATED METHODS
-    public Double getTotalPaid() {
-        return payments.stream()
-                .filter(Payment::isSuccessful)
-                .mapToDouble(Payment::getAmount)
-                .sum();
-    }
-
-    public Double getRemainingAmount() {
-        return Math.max(0, calculateTotalCost() - getTotalPaid());
-    }
-
-    public boolean isFullyPaid() {
-        return getTotalPaid() >= calculateTotalCost();
-    }
-
-    public List<Payment> getSuccessfulPayments() {
-        return payments.stream()
-                .filter(Payment::isSuccessful)
-                .collect(Collectors.toList());
-    }
-
-    public void addPayment(Payment payment) {
-        payments.add(payment);
-        payment.setBooking(this);
-
-        // Cập nhật depositPaid nếu là payment DEPOSIT
-        if (payment.getType() == Payment.PaymentType.DEPOSIT && payment.isSuccessful()) {
-            this.depositPaid += payment.getAmount();
-        }
-    }
-
-    public void confirm() {
-        if (this.status != BookingStatus.PENDING) {
-            throw new IllegalStateException("Only pending bookings can be confirmed");
-        }
-        this.status = BookingStatus.CONFIRMED;
-    }
-
-    public void activate() {
-        if (this.status != BookingStatus.CONFIRMED) {
-            throw new IllegalStateException("Only confirmed bookings can be activated");
-        }
-        this.status = BookingStatus.ACTIVE;
-    }
-
-    public void complete() {
-        if (this.status != BookingStatus.ACTIVE) {
-            throw new IllegalStateException("Only active bookings can be completed");
-        }
-        this.status = BookingStatus.COMPLETED;
-    }
-
-    public void cancel() {
-        if (!canCancel()) {
-            throw new IllegalStateException("Booking cannot be cancelled");
-        }
-        this.status = BookingStatus.CANCELLED;
-    }
 
     public enum BookingStatus {
-        PENDING,      // Chờ xác nhận (vừa đặt)
-        CONFIRMED,    // Đã xác nhận (đã thanh toán cọc)
+        PENDING,      // Chờ thanh toán (10 phút)
+        CONFIRMED,    // Đã thanh toán đủ
         ACTIVE,       // Đang thuê (đã nhận xe)
-        COMPLETED,    // Hoàn thành (đã trả xe)
-        CANCELLED     // Đã hủy
+        COMPLETED,    // Hoàn thành (đã trả xe và hoàn tiền)
+        CANCELLED,    // Đã hủy
     }
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        // Set payment expiry time to 10 minutes from creation
+        paymentExpiryTime = LocalDateTime.now().plusMinutes(10);
+        // Calculate total payment
+        totalPayment = calculateTotalCost();
     }
 
     @PreUpdate

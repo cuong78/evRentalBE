@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class RentalStation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,59 +29,28 @@ public class RentalStation {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // ✅ AGGREGATION: Station được quản lý bởi Admin (không cascade)
     @ManyToOne
-    @JoinColumn(name = "admin_id")
-    private Admin admin;
+    @JoinColumn(name = "admin_user_id")
+    private User adminUser;
 
-    // ✅ AGGREGATION: Station thuê Staff (không cascade ALL)
-    // Staff có thể chuyển station khác
-    @OneToMany(mappedBy = "station", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    private List<Staff> staffMembers = new ArrayList<>();
+    @OneToMany(mappedBy = "managedStation", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @Builder.Default
+    private List<User> staffUsers = new ArrayList<>();
 
-    // ✅ AGGREGATION: Station chứa Vehicle (không cascade ALL)
     @OneToMany(mappedBy = "station", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @Builder.Default
     private List<Vehicle> vehicles = new ArrayList<>();
 
-    // ✅ ASSOCIATION: Station xử lý Booking
     @OneToMany(mappedBy = "station", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @Builder.Default
     private List<Booking> bookings = new ArrayList<>();
 
-    // ✅ BUSINESS METHODS
-    public List<Vehicle> getAvailableVehicles() {
-        return vehicles.stream()
-                .filter(Vehicle::isAvailable)
-                .collect(Collectors.toList());
+
+    public List<User> getStaffUsers() {
+        return new ArrayList<>(staffUsers);
     }
 
-    public List<Vehicle> getVehiclesByType(VehicleType type) {
-        return vehicles.stream()
-                .filter(v -> v.getType().equals(type))
-                .collect(Collectors.toList());
-    }
 
-    public List<Staff> getStaffMembers() {
-        return new ArrayList<>(staffMembers);
-    }
-
-    public void assignStaff(Staff staff) {
-        if (!staffMembers.contains(staff)) {
-            staffMembers.add(staff);
-            staff.setStation(this);
-        }
-    }
-
-    public void removeStaff(Staff staff) {
-        staffMembers.remove(staff);
-        staff.setStation(null);
-    }
-
-    public void addVehicle(Vehicle vehicle) {
-        if (!vehicles.contains(vehicle)) {
-            vehicles.add(vehicle);
-            vehicle.setStation(this);
-        }
-    }
 
     @PrePersist
     protected void onCreate() {
