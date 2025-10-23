@@ -7,6 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -236,8 +237,8 @@ public class DataInitializer implements CommandLineRunner {
                     .documentNumber(cccdNumbers[i])
                     .frontPhoto("/photos/cccd_front_" + (i + 1) + ".jpg")
                     .backPhoto("/photos/cccd_back_" + (i + 1) + ".jpg")
-                    .issueDate(LocalDateTime.now().minusYears(2))
-                    .expiryDate(LocalDateTime.now().plusYears(8))
+                    .issueDate(LocalDate.now().minusYears(2))
+                    .expiryDate(LocalDate.now().plusYears(8))
                     .issuedBy("Department of Public Security")
                     .status(Document.DocumentStatus.VERIFIED)
                     .verifiedAt(LocalDateTime.now().minusDays(30))
@@ -252,8 +253,8 @@ public class DataInitializer implements CommandLineRunner {
                     .documentNumber(drivingLicenseNumbers[i])
                     .frontPhoto("/photos/driving_license_front_" + (i + 1) + ".jpg")
                     .backPhoto("/photos/driving_license_back_" + (i + 1) + ".jpg")
-                    .issueDate(LocalDateTime.now().minusYears(1))
-                    .expiryDate(LocalDateTime.now().plusYears(4))
+                    .issueDate(LocalDate.now().minusYears(1))
+                    .expiryDate(LocalDate.now().plusYears(4))
                     .issuedBy("Department of Transport")
                     .status(Document.DocumentStatus.VERIFIED)
                     .verifiedAt(LocalDateTime.now().minusDays(15))

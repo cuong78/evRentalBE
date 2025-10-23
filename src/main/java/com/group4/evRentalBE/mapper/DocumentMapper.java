@@ -35,26 +35,13 @@ public class DocumentMapper {
                 .build();
     }
 
-    public Document toEntity(DocumentRequest request, User user) {
-        return Document.builder()
-                .user(user)
-                .documentType(request.getDocumentType())
-                .documentNumber(request.getDocumentNumber())
-                .frontPhoto(request.getFrontPhoto())
-                .backPhoto(request.getBackPhoto())
-                .issueDate(request.getIssueDate())
-                .expiryDate(request.getExpiryDate())
-                .issuedBy(request.getIssuedBy())
-                .isDefault(request.isDefault())
-                .status(Document.DocumentStatus.VERIFIED)
-                .build();
-    }
+
 
     public void updateEntity(Document document, DocumentRequest request) {
         document.setDocumentType(request.getDocumentType());
         document.setDocumentNumber(request.getDocumentNumber());
-        document.setFrontPhoto(request.getFrontPhoto());
-        document.setBackPhoto(request.getBackPhoto());
+        document.setFrontPhoto(String.valueOf(request.getFrontPhoto()));
+        document.setBackPhoto(String.valueOf(request.getBackPhoto()));
         document.setIssueDate(request.getIssueDate());
         document.setExpiryDate(request.getExpiryDate());
         document.setIssuedBy(request.getIssuedBy());

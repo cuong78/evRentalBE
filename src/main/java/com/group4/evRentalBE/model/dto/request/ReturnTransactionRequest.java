@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.constraints.NotNull;
 
@@ -17,7 +18,9 @@ public class ReturnTransactionRequest {
     private String bookingId;
 
     private String conditionNotes;
-    private String photos;
+    
+    // Changed to MultipartFile array for multiple photos
+    private MultipartFile[] photos;
 
     private Double damageFee;
 }

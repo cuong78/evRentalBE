@@ -2,6 +2,8 @@ package com.group4.evRentalBE.model.entity;
 
 import lombok.*;
 import jakarta.persistence.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -34,10 +36,10 @@ public class Document {
     private String backPhoto;
 
     @Column(name = "issue_date")
-    private LocalDateTime issueDate;
+    private LocalDate issueDate;
 
     @Column(name = "expiry_date")
-    private LocalDateTime expiryDate;
+    private LocalDate expiryDate;
 
     @Column(name = "issued_by")
     private String issuedBy;
@@ -77,11 +79,11 @@ public class Document {
 
     public boolean isValid() {
         return status == DocumentStatus.VERIFIED 
-                && (expiryDate == null || expiryDate.isAfter(LocalDateTime.now()));
+                && (expiryDate == null || expiryDate.isAfter(LocalDate.now()));
     }
 
     public boolean isExpired() {
-        return expiryDate != null && expiryDate.isBefore(LocalDateTime.now());
+        return expiryDate != null && expiryDate.isBefore(LocalDate.now());
     }
 
     public void setAsDefault() {
