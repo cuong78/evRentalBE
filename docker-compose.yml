@@ -1,10 +1,112 @@
+version: '3.8'
+
 services:
+  # PostgreSQL Database
   postgres:
-    container_name: postgres
+    container_name: evrental-postgres
     image: postgres:17.5
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123456
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456}
+      POSTGRES_DB: ${POSTGRES_DB:-evrental}
+      TZ: Asia/Ho_Chi_Minh
     ports:
       - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./create_vehicle_search_indexes.sql:/docker-entrypoint-initdb.d/create_vehicle_search_indexes.sql:ro
+    networks:
+      - evrental-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-evrental}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Application
+  app:
+    container_name: evrental-app
+    # Uncomment below for local development (build from source)
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    
+    # Use pre-built image for production (will be set by CI/CD)
+    image: ${DOCKER_IMAGE:-anhcuong8386/evrental-backend:latest}
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      
+      # Database Configuration
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/evrental}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-123456}
+      
+      # JPA/Hibernate Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL:-false}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-3600000}
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-86400000}
+      
+      # Email Configuration
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
+      
+      # Frontend URLs
+      FRONTEND_URL_BASE: ${FRONTEND_URL_BASE:-http://localhost:3000}
+      FRONTEND_URL_PAYMENT_RETURN: ${FRONTEND_URL_PAYMENT_RETURN:-http://localhost:3000/payment/vnpay-return}
+      FRONTEND_URL_EMAIL_VERIFICATION: ${FRONTEND_URL_EMAIL_VERIFICATION:-http://localhost:3000/verify-email}
+      
+      # VNPay Payment Configuration
+      PAYMENT_VNPAY_TMN_CODE: ${PAYMENT_VNPAY_TMN_CODE}
+      PAYMENT_VNPAY_SECRET_KEY: ${PAYMENT_VNPAY_SECRET_KEY}
+      PAYMENT_VNPAY_URL: ${PAYMENT_VNPAY_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+      PAYMENT_VNPAY_IP_ADDRESS: ${PAYMENT_VNPAY_IP_ADDRESS:-127.0.0.1}
+      PAYMENT_VNPAY_WALLET_RETURN_URL: ${PAYMENT_VNPAY_WALLET_RETURN_URL}
+      
+      # Cloudinary Configuration
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      
+      # File Upload Configuration
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:-10MB}
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:-10MB}
+      
+      # Server Configuration
+      SERVER_PORT: 8080
+      TZ: Asia/Ho_Chi_Minh
+      
+      # CORS Configuration
+      SPRING_GRAPHQL_CORS_ALLOWED_ORIGINS: "*"
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - evrental-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  evrental-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local

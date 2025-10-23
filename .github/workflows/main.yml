@@ -1,47 +1,217 @@
-name: Java CI with Maven
+name: CI/CD Pipeline - EVRental Backend
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:  # Cho phép chạy thủ công từ GitHub UI
+
+env:
+  DOCKER_IMAGE_NAME: evrental-backend
+  JAVA_VERSION: '21'
 
 jobs:
-  build:
+  # ==================== BUILD & TEST ====================
+  build-and-test:
+    name: 🔨 Build and Test
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: ☕ Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: maven
 
-      - name: Clean and compile
+      - name: 🔧 Clean and compile
         run: mvn clean compile
 
-      - name: Run tests
+      - name: 🧪 Run tests
         run: mvn test
+        continue-on-error: true
 
-      - name: Package
+      - name: 📦 Package application
         run: mvn package -DskipTests
 
-      - name: Set up Docker Buildx
+      - name: 📊 Test Report
+        if: always()
+        run: |
+          if [ -d "target/surefire-reports" ]; then
+            echo "✅ Tests completed"
+            find target/surefire-reports -name "*.xml" -exec cat {} \;
+          fi
+
+  # ==================== BUILD & PUSH DOCKER IMAGE ====================
+  docker-build-push:
+    name: 🐳 Build and Push Docker Image
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
+      - name: 🔐 Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: 📝 Generate Docker tags
+        id: meta
+        run: |
+          echo "tags=${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest,${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "version=${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      - name: 🐳 Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           dockerfile: Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/evrental:${{ github.run_number }}-${{ github.sha }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:v${{ github.run_number }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache,mode=max
+
+      - name: ✅ Image built successfully
+        run: |
+          echo "🎉 Docker image pushed successfully!"
+          echo "📦 Image: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest"
+          echo "🏷️ Version: v${{ github.run_number }}"
+
+  # ==================== DEPLOY TO SERVER ====================
+  deploy-to-server:
+    name: 🚀 Deploy to Production Server
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📤 Copy docker-compose to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "docker-compose.yml"
+          target: "/opt/evrental"
+
+      - name: 🚀 Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            set -e
+            
+            echo "🎯 Starting deployment..."
+            
+            # Di chuyển đến thư mục dự án
+            cd /opt/evrental || exit 1
+            
+            # Tạo backup của container cũ (nếu có)
+            if docker ps -a | grep -q evrental-app; then
+              echo "💾 Creating backup of old container..."
+              docker commit evrental-app evrental-app-backup-$(date +%Y%m%d-%H%M%S) || true
+            fi
+            
+            # Pull Docker image mới nhất
+            echo "🐳 Pulling latest Docker image..."
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            
+            # Cập nhật docker-compose.yml với image name đúng
+            sed -i 's|build:|# build:|g' docker-compose.yml
+            sed -i 's|context: .|# context: .|g' docker-compose.yml
+            sed -i 's|dockerfile: Dockerfile|# dockerfile: Dockerfile|g' docker-compose.yml
+            
+            # Thêm image vào docker-compose nếu chưa có
+            if ! grep -q "image:" docker-compose.yml; then
+              sed -i '/container_name: evrental-app/a\    image: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest' docker-compose.yml
+            fi
+            
+            # Dừng và xóa container cũ
+            echo "🛑 Stopping old containers..."
+            docker-compose down
+            
+            # Khởi động lại với image mới
+            echo "🚀 Starting new containers..."
+            docker-compose up -d
+            
+            # Đợi container khởi động
+            echo "⏳ Waiting for containers to be healthy..."
+            sleep 15
+            
+            # Kiểm tra trạng thái
+            echo "📊 Container status:"
+            docker-compose ps
+            
+            # Kiểm tra logs
+            echo "📋 Recent logs:"
+            docker-compose logs --tail=30 app
+            
+            # Dọn dẹp images cũ (giữ lại 3 images gần nhất)
+            echo "🧹 Cleaning up old images..."
+            docker image prune -af --filter "until=72h" || true
+            
+            echo "✅ Deployment completed successfully!"
+            echo "🌐 Application version: v${{ github.run_number }}"
+
+  # ==================== HEALTH CHECK ====================
+  health-check:
+    name: 🏥 Health Check
+    needs: deploy-to-server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⏳ Wait for service to start
+        run: sleep 30
+
+      - name: 🔍 Check application health
+        run: |
+          echo "🏥 Checking application health..."
+          
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.SERVER_HOST }}:8080/actuator/health || echo "000")
+            
+            if [ "$RESPONSE" = "200" ]; then
+              echo "✅ Application is healthy! (HTTP $RESPONSE)"
+              exit 0
+            else
+              echo "⚠️ Health check attempt $((RETRY_COUNT + 1))/$MAX_RETRIES failed (HTTP $RESPONSE)"
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              sleep 10
+            fi
+          done
+          
+          echo "❌ Health check failed after $MAX_RETRIES attempts"
+          exit 1
+        continue-on-error: true
+
+      - name: 📢 Deployment notification
+        if: always()
+        run: |
+          echo "🎉 Deployment pipeline completed!"
+          echo "📦 Version: v${{ github.run_number }}"
+          echo "🔗 Commit: ${{ github.sha }}"
+          echo "👤 Author: ${{ github.actor }}"

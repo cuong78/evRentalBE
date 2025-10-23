@@ -23,6 +23,7 @@ public class DataInitializer implements CommandLineRunner {
     private final VehicleRepository vehicleRepository;
     private final RentalStationRepository rentalStationRepository;
     private final PasswordEncoder passwordEncoder;
+    private final WalletRepository walletRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -38,6 +39,24 @@ public class DataInitializer implements CommandLineRunner {
         initializeUsers();
         initializeDocuments();
         initializeVehicles();
+        initializeWallets();
+    }
+    private void initializeWallets() {
+        // Get all customer users
+        var customerUsers = userRepository.findAll().stream()
+                .filter(user -> user.hasRole("CUSTOMER"))
+                .toList();
+
+        for (User customer : customerUsers) {
+            // Kiểm tra xem customer đã có ví chưa
+            if (!walletRepository.existsByUser(customer)) {
+                Wallet wallet = Wallet.builder()
+                        .user(customer)
+                        .balance(0L) // Số dư ban đầu là 0
+                        .build();
+                walletRepository.save(wallet);
+            }
+        }
     }
 
     private void initializePermissions() {
