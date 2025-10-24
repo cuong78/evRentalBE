@@ -53,9 +53,9 @@ public class WalletController {
         );
     }
 
-    @RequestMapping(value="/vnpay-return", method={RequestMethod.GET, RequestMethod.POST})
-    @Hidden
+    @RequestMapping(value="/vnpay-return")
     public ResponseEntity<Map<String,String>> vnpayReturn(@RequestParam Map<String,String> params) {
         return ResponseEntity.ok(walletService.handleVnPayReturn(params));
     }
+
 }
