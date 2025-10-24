@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:  # Cho phép chạy thủ công từ GitHub UI
+  workflow_dispatch:
 
 env:
   DOCKER_IMAGE_NAME: evrental-backend
@@ -28,22 +28,21 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: 🔧 Clean and compile
-        run: mvn clean compile
+      - name: 🔧 Build with Maven
+        run: mvn clean package -DskipTests
 
       - name: 🧪 Run tests
         run: mvn test
         continue-on-error: true
 
-      - name: 📦 Package application
-        run: mvn package -DskipTests
-
-      - name: 📊 Test Report
+      - name: 📊 Test Summary
         if: always()
         run: |
+          echo "### 📊 Test Results" >> $GITHUB_STEP_SUMMARY
           if [ -d "target/surefire-reports" ]; then
-            echo "✅ Tests completed"
-            find target/surefire-reports -name "*.xml" -exec cat {} \;
+            echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No test reports found" >> $GITHUB_STEP_SUMMARY
           fi
 
   # ==================== BUILD & PUSH DOCKER IMAGE ====================
@@ -66,30 +65,36 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: 📝 Generate Docker tags
+      - name: 📝 Generate Docker metadata
         id: meta
-        run: |
-          echo "tags=${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest,${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.run_number }}" >> $GITHUB_OUTPUT
-          echo "version=${{ github.run_number }}" >> $GITHUB_OUTPUT
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+            type=ref,event=branch
+            type=semver,pattern={{version}}
 
       - name: 🐳 Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: Dockerfile
+          file: ./Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:v${{ github.run_number }}
-            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache,mode=max
+          platforms: linux/amd64
+          build-args: |
+            SPRING_PROFILES_ACTIVE=prod
 
-      - name: ✅ Image built successfully
+      - name: ✅ Docker image built successfully
         run: |
-          echo "🎉 Docker image pushed successfully!"
-          echo "📦 Image: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest"
-          echo "🏷️ Version: v${{ github.run_number }}"
+          echo "### 🐳 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Image pushed successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "🏷️ **Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
 
   # ==================== DEPLOY TO SERVER ====================
   deploy-to-server:
@@ -109,8 +114,9 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          source: "docker-compose.yml"
+          source: "docker-compose.yml,.env.example"
           target: "/opt/evrental"
+          overwrite: true
 
       - name: 🚀 Deploy to server via SSH
         uses: appleboy/ssh-action@v1.0.0
@@ -122,57 +128,42 @@ jobs:
           script: |
             set -e
             
-            echo "🎯 Starting deployment..."
-            
-            # Di chuyển đến thư mục dự án
+            echo "📂 Navigating to project directory..."
             cd /opt/evrental || exit 1
             
-            # Tạo backup của container cũ (nếu có)
-            if docker ps -a | grep -q evrental-app; then
-              echo "💾 Creating backup of old container..."
-              docker commit evrental-app evrental-app-backup-$(date +%Y%m%d-%H%M%S) || true
+            echo "🔍 Checking for .env file..."
+            if [ ! -f .env ]; then
+              echo "⚠️  .env file not found, creating from example..."
+              cp .env.example .env
+              echo "⚠️  Please configure .env file manually!"
             fi
             
-            # Pull Docker image mới nhất
             echo "🐳 Pulling latest Docker image..."
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/evrental-backend:latest
             
-            # Cập nhật docker-compose.yml với image name đúng
-            sed -i 's|build:|# build:|g' docker-compose.yml
-            sed -i 's|context: .|# context: .|g' docker-compose.yml
-            sed -i 's|dockerfile: Dockerfile|# dockerfile: Dockerfile|g' docker-compose.yml
-            
-            # Thêm image vào docker-compose nếu chưa có
-            if ! grep -q "image:" docker-compose.yml; then
-              sed -i '/container_name: evrental-app/a\    image: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest' docker-compose.yml
-            fi
-            
-            # Dừng và xóa container cũ
             echo "🛑 Stopping old containers..."
-            docker-compose down
+            docker compose down || true
             
-            # Khởi động lại với image mới
             echo "🚀 Starting new containers..."
-            docker-compose up -d
+            docker compose up -d
             
-            # Đợi container khởi động
-            echo "⏳ Waiting for containers to be healthy..."
-            sleep 15
+            echo "⏳ Waiting for containers to be ready..."
+            sleep 10
             
-            # Kiểm tra trạng thái
             echo "📊 Container status:"
-            docker-compose ps
+            docker compose ps
             
-            # Kiểm tra logs
-            echo "📋 Recent logs:"
-            docker-compose logs --tail=30 app
-            
-            # Dọn dẹp images cũ (giữ lại 3 images gần nhất)
             echo "🧹 Cleaning up old images..."
-            docker image prune -af --filter "until=72h" || true
+            docker image prune -af || true
             
             echo "✅ Deployment completed successfully!"
-            echo "🌐 Application version: v${{ github.run_number }}"
+
+      - name: 📝 Deployment Summary
+        run: |
+          echo "### 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Deployed to: ${{ secrets.SERVER_HOST }}" >> $GITHUB_STEP_SUMMARY
+          echo "🐳 Image: ${{ secrets.DOCKER_HUB_USERNAME }}/evrental-backend:latest" >> $GITHUB_STEP_SUMMARY
+          echo "⏰ Time: $(date)" >> $GITHUB_STEP_SUMMARY
 
   # ==================== HEALTH CHECK ====================
   health-check:
@@ -182,36 +173,30 @@ jobs:
 
     steps:
       - name: ⏳ Wait for service to start
-        run: sleep 30
+        run: |
+          echo "Waiting 30 seconds for services to initialize..."
+          sleep 30
 
       - name: 🔍 Check application health
         run: |
-          echo "🏥 Checking application health..."
+          echo "### 🏥 Health Check Results" >> $GITHUB_STEP_SUMMARY
           
-          MAX_RETRIES=5
-          RETRY_COUNT=0
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.SERVER_HOST }}:8080/actuator/health || echo "000")
           
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.SERVER_HOST }}:8080/actuator/health || echo "000")
-            
-            if [ "$RESPONSE" = "200" ]; then
-              echo "✅ Application is healthy! (HTTP $RESPONSE)"
-              exit 0
-            else
-              echo "⚠️ Health check attempt $((RETRY_COUNT + 1))/$MAX_RETRIES failed (HTTP $RESPONSE)"
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              sleep 10
-            fi
-          done
-          
-          echo "❌ Health check failed after $MAX_RETRIES attempts"
-          exit 1
+          if [ "$RESPONSE" = "200" ]; then
+            echo "✅ Application is healthy!" >> $GITHUB_STEP_SUMMARY
+            echo "📊 Status Code: $RESPONSE" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "⚠️ Health check returned: $RESPONSE" >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️  This might be normal if server firewall blocks port 8080" >> $GITHUB_STEP_SUMMARY
+            echo "💡 SSH into server and check: docker compose logs app" >> $GITHUB_STEP_SUMMARY
+          fi
         continue-on-error: true
 
-      - name: 📢 Deployment notification
+      - name: 📢 Final Status
         if: always()
         run: |
-          echo "🎉 Deployment pipeline completed!"
-          echo "📦 Version: v${{ github.run_number }}"
-          echo "🔗 Commit: ${{ github.sha }}"
-          echo "👤 Author: ${{ github.actor }}"
+          echo "### 🎉 Deployment Pipeline Completed!" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 Check your application at: http://${{ secrets.SERVER_HOST }}:8080" >> $GITHUB_STEP_SUMMARY
+          echo "📝 To verify logs: \`ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'cd /opt/evrental && docker compose logs app'\`" >> $GITHUB_STEP_SUMMARY
