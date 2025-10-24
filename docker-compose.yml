@@ -1,10 +1,48 @@
+version: '3.8'
+
 services:
   postgres:
-    container_name: postgres
+    container_name: evrental-postgres
     image: postgres:17.5
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123456
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: Asia/Ho_Chi_Minh
     ports:
       - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - evrental-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d evrental"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    container_name: evrental-app
+    # build:              # ← Comment out khi deploy
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: anhcuong8386/evrental-backend:latest  # ← Thêm dòng này
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - evrental-network
+
+networks:
+  evrental-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local

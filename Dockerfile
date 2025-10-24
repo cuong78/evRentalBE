@@ -17,7 +17,9 @@ RUN mvn clean package -Dmaven.test.skip=true
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-ENV TZ=Asia/Ho_Chi_Minh
+ENV SPRING_PROFILES_ACTIVE=prod
+
+
 
 # Set working folder to App and copy complied file from above step
 

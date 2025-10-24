@@ -11,10 +11,7 @@ import com.group4.evRentalBE.model.dto.request.LoginRequest;
 import com.group4.evRentalBE.model.dto.request.UserRegistrationRequest;
 import com.group4.evRentalBE.model.dto.response.UserResponse;
 import com.group4.evRentalBE.model.entity.*;
-import com.group4.evRentalBE.repository.PasswordResetTokenRepository;
-import com.group4.evRentalBE.repository.RoleRepository;
-import com.group4.evRentalBE.repository.UserRepository;
-import com.group4.evRentalBE.repository.VerificationTokenRepository;
+import com.group4.evRentalBE.repository.*;
 import com.group4.evRentalBE.service.AuthenticationService;
 import com.group4.evRentalBE.service.EmailService;
 import com.group4.evRentalBE.service.RefreshTokenService;
@@ -79,6 +76,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Autowired
     RoleRepository roleRepository;
 
+    @Autowired
+    private WalletRepository walletRepository;
 
     @Override
     @Transactional
@@ -95,8 +94,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new ConflictException("Phone number already exists");
         }
 
-
-
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -112,6 +109,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         User savedUser = userRepository.save(user);
 
+        // Tạo ví cho user mới với số dư 0
+        createWalletForUser(savedUser);
+
         // Tạo verification token
         String token = UUID.randomUUID().toString();
         createVerificationToken(savedUser, token);
@@ -119,8 +119,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         // Gửi email xác thực
         sendVerificationEmail(savedUser, token);
 
-
         return savedUser;
+    }
+
+    private void createWalletForUser(User user) {
+        Wallet wallet = Wallet.builder()
+                .user(user)
+                .balance(0L) // Số dư ban đầu là 0
+                .build();
+        walletRepository.save(wallet);
+        log.info("Created wallet for user: {} with initial balance: 0", user.getUsername());
     }
 
     private void createVerificationToken(User user, String token) {
