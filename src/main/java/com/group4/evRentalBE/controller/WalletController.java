@@ -53,7 +53,7 @@ public class WalletController {
         );
     }
 
-    @RequestMapping(value="/vnpay-return")
+    @GetMapping(value="/vnpay-return")
     public ResponseEntity<Map<String,String>> vnpayReturn(@RequestParam Map<String,String> params) {
         return ResponseEntity.ok(walletService.handleVnPayReturn(params));
     }

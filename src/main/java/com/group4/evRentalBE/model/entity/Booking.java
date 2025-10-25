@@ -82,9 +82,6 @@ public class Booking {
     }
 
 
-
-
-
     public enum BookingStatus {
         PENDING,      // Chờ thanh toán (10 phút)
         CONFIRMED,    // Đã thanh toán đủ
