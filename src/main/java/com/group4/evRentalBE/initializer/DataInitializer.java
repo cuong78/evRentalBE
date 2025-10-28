@@ -1,7 +1,7 @@
 package com.group4.evRentalBE.initializer;
 
-import com.group4.evRentalBE.model.entity.*;
-import com.group4.evRentalBE.repository.*;
+import com.group4.evRentalBE.domain.entity.*;
+import com.group4.evRentalBE.domain.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;

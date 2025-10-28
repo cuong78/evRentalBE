@@ -1,21 +1,18 @@
 package com.group4.evRentalBE.service.impl;
 
-import com.group4.evRentalBE.constant.PredefinedRole;
-import com.group4.evRentalBE.exception.exceptions.BadRequestException;
-import com.group4.evRentalBE.exception.exceptions.ConflictException;
-import com.group4.evRentalBE.exception.exceptions.NotFoundException;
-import com.group4.evRentalBE.mapper.UserMapper;
-import com.group4.evRentalBE.model.dto.request.LoginRequest;
-import com.group4.evRentalBE.model.dto.request.UserRegistrationRequest;
-import com.group4.evRentalBE.model.dto.response.UserResponse;
-import com.group4.evRentalBE.model.entity.*;
-import com.group4.evRentalBE.repository.PasswordResetTokenRepository;
-import com.group4.evRentalBE.repository.RoleRepository;
-import com.group4.evRentalBE.repository.UserRepository;
-import com.group4.evRentalBE.repository.VerificationTokenRepository;
-import com.group4.evRentalBE.service.EmailService;
-import com.group4.evRentalBE.service.RefreshTokenService;
-import com.group4.evRentalBE.service.TokenService;
+import com.group4.evRentalBE.business.service.impl.AuthenticationServiceImpl;
+import com.group4.evRentalBE.domain.entity.User;
+import com.group4.evRentalBE.infrastructure.exception.exceptions.BadRequestException;
+import com.group4.evRentalBE.infrastructure.exception.exceptions.ConflictException;
+import com.group4.evRentalBE.business.dto.request.LoginRequest;
+import com.group4.evRentalBE.business.dto.request.UserRegistrationRequest;
+import com.group4.evRentalBE.domain.repository.PasswordResetTokenRepository;
+import com.group4.evRentalBE.domain.repository.RoleRepository;
+import com.group4.evRentalBE.domain.repository.UserRepository;
+import com.group4.evRentalBE.domain.repository.VerificationTokenRepository;
+import com.group4.evRentalBE.business.service.EmailService;
+import com.group4.evRentalBE.business.service.RefreshTokenService;
+import com.group4.evRentalBE.business.service.TokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -24,13 +21,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.time.LocalDateTime;
-import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
