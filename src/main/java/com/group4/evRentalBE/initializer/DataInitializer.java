@@ -123,24 +123,112 @@ public class DataInitializer implements CommandLineRunner {
     private void initializeVehicleTypes() {
         VehicleType[] vehicleTypes = {
             VehicleType.builder()
-                    .name("Electric Motorbike")
-                    .depositAmount(2000000.0)
-                    .rentalRate(150000.0)
+                    .name("VinFast VF 3")
+                    .depositAmount(5000000.0)
+                    .rentalRate(590000.0)
+                    .imageUrl("https://greenfuture.tech/_next/image?url=https%3A%2F%2Fupload-static.fgf.vn%2Fcar%2Fvf301.jpg&w=384&q=75")
+                    .seats(4)
+                    .range(210)
+                    .rangeStandard("NEDC")
+                    .trunkCapacity(285)
+                    .category("Minicar")
+                    .description("Dòng xe 4 chỗ nhỏ gọn, hiện đại thích hợp cho nhu cầu di chuyển nội thành hằng ngày")
                     .build(),
             VehicleType.builder()
-                    .name("Electric Bicycle")
-                    .depositAmount(500000.0)
-                    .rentalRate(50000.0)
-                    .build(),
-            VehicleType.builder()
-                    .name("Electric Scooter")
-                    .depositAmount(1000000.0)
-                    .rentalRate(80000.0)
-                    .build(),
-            VehicleType.builder()
-                    .name("Electric Car")
+                    .name("VinFast VF 6S")
                     .depositAmount(10000000.0)
-                    .rentalRate(500000.0)
+                    .rentalRate(1100000.0)
+                    .imageUrl("https://greenfuture.tech/_next/image?url=https%3A%2F%2Fupload-static.fgf.vn%2Fcar%2Fvf6plus001.png&w=384&q=75")
+                    .seats(5)
+                    .range(480)
+                    .rangeStandard("NEDC")
+                    .trunkCapacity(423)
+                    .category("B-SUV")
+                    .description("Thiết kế thời thượng, khoang ngồi rộng rãi và được trang bị đầy đủ các tính năng công nghệ cơ bản")
+                    .build(),
+            VehicleType.builder()
+                    .name("VinFast VF 6 Plus")
+                    .depositAmount(12000000.0)
+                    .rentalRate(1250000.0)
+                    .imageUrl("https://greenfuture.tech/_next/image?url=https%3A%2F%2Fupload-static.fgf.vn%2Fcar%2Fvf6s001.png&w=384&q=75")
+                    .seats(5)
+                    .range(460)
+                    .rangeStandard("NEDC")
+                    .trunkCapacity(423)
+                    .category("B-SUV")
+                    .description("Khoang ngồi rộng rãi, thiết kế sang trọng và được trang bị màn hình giải trí lớn")
+                    .build(),
+            VehicleType.builder()
+                    .name("VinFast VF 7S")
+                    .depositAmount(15000000.0)
+                    .rentalRate(1700000.0)
+                    .imageUrl("https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/dw4a2b0002/reserves/VF7/vf7-masterpiece-1.webp")
+                    .seats(5)
+                    .range(430)
+                    .rangeStandard("NEDC")
+                    .trunkCapacity(537)
+                    .category("C-SUV")
+                    .description("Thiết kế mạnh mẽ, thể thao, động cơ êm ái. Đáp ứng tốt cho nhu cầu đi xa, đi tỉnh của các gia đình, nhóm bạn")
+                    .build(),
+            VehicleType.builder()
+                    .name("VinFast VF 7 Plus")
+                    .depositAmount(15000000.0)
+                    .rentalRate(1700000.0)
+                    .imageUrl("https://greenfuture.tech/_next/image?url=https%3A%2F%2Fupload-static.fgf.vn%2Fcar%2Fvf7plus001.png&w=384&q=75")
+                    .seats(5)
+                    .range(496)
+                    .rangeStandard("NEDC")
+                    .trunkCapacity(537)
+                    .category("C-SUV")
+                    .description("Thiết kế tương tự dòng VF 7S nhưng được tích hợp thêm nhiều tính năng vượt trội như cửa sổ trời, hệ thống âm thanh sống động")
+                    .build(),
+            VehicleType.builder()
+                    .name("VinFast VF 8 Eco")
+                    .depositAmount(18000000.0)
+                    .rentalRate(1700000.0)
+                    .imageUrl("https://greenfuture.tech/_next/image?url=https%3A%2F%2Fupload-static.fgf.vn%2Fcar%2Fvf8eco01.jpg&w=384&q=75")
+                    .seats(5)
+                    .range(471)
+                    .rangeStandard("WLTP")
+                    .trunkCapacity(350)
+                    .category("D-SUV")
+                    .description("Tiêu biểu trong phân khúc xe 5 chỗ với khoang ngồi rộng rãi kết hợp với công nghệ hỗ trợ lái cơ bản")
+                    .build(),
+            VehicleType.builder()
+                    .name("VinFast VF 8 Plus")
+                    .depositAmount(20000000.0)
+                    .rentalRate(1800000.0)
+                    .imageUrl("https://greenfuture.tech/_next/image?url=https%3A%2F%2Fupload-static.fgf.vn%2Fcar%2Fvf8plus01.jpg&w=384&q=75")
+                    .seats(5)
+                    .range(471)
+                    .rangeStandard("WLTP")
+                    .trunkCapacity(350)
+                    .category("D-SUV")
+                    .description("Mẫu xe 5 chỗ hiện đại được tích hợp thêm nhiều tính năng cao cấp như ghế chỉnh điện, sưởi/làm mát ghế")
+                    .build(),
+            VehicleType.builder()
+                    .name("VinFast VF 9 Eco")
+                    .depositAmount(25000000.0)
+                    .rentalRate(2400000.0)
+                    .imageUrl("https://greenfuture.tech/_next/image?url=https%3A%2F%2Fupload-static.fgf.vn%2Fcar%2Fvf9-eco-09.jpg&w=384&q=75")
+                    .seats(7)
+                    .range(437)
+                    .rangeStandard("WLTP")
+                    .trunkCapacity(212)
+                    .category("E-SUV")
+                    .description("Mẫu xe SUV 7 chỗ cỡ lớn phù hợp cho gia đình đông thành viên. Dung lượng pin cao giúp di chuyển hành trình xa")
+                    .build(),
+            VehicleType.builder()
+                    .name("VinFast VF 9 Plus")
+                    .depositAmount(30000000.0)
+                    .rentalRate(2600000.0)
+                    .imageUrl("https://greenfuture.tech/_next/image?url=https%3A%2F%2Fupload-static.fgf.vn%2Fcar%2Fvf9-plus-10.jpg&w=384&q=75")
+                    .seats(7)
+                    .range(602)
+                    .rangeStandard("WLTP")
+                    .trunkCapacity(212)
+                    .category("E-SUV")
+                    .description("Dòng xe điện cao cấp nhất được trang bị đầy đủ những tính năng lái thông minh. Khoang ngồi rộng rãi, sang trọng")
                     .build()
         };
 
@@ -287,25 +375,54 @@ public class DataInitializer implements CommandLineRunner {
         var stations = rentalStationRepository.findAll();
         var vehicleTypes = vehicleTypeRepository.findAll();
 
+        // Prefixes cho biển số theo tỉnh/thành phố
+        String[] licensePrefixes = {"59", "51", "29", "43"}; // HCM, HCM, Hanoi, Da Nang
+        String[] cities = {"TP.HCM", "TP.HCM", "Hà Nội", "Đà Nẵng"};
+        
+        int globalVehicleCounter = 1;
+
         // Create vehicles for each station and type combination
         for (int stationIndex = 0; stationIndex < stations.size(); stationIndex++) {
             RentalStation station = stations.get(stationIndex);
+            String prefix = licensePrefixes[stationIndex];
+            String city = cities[stationIndex];
             
             for (int typeIndex = 0; typeIndex < vehicleTypes.size(); typeIndex++) {
                 VehicleType type = vehicleTypes.get(typeIndex);
                 
-                // Create 3-5 vehicles per type per station
-                int vehicleCount = 3 + (stationIndex + typeIndex) % 3; // 3-5 vehicles
+                // Create 2-3 vehicles per type per station
+                int vehicleCount = 2 + (typeIndex % 2); // 2-3 vehicles
                 
                 for (int i = 0; i < vehicleCount; i++) {
+                    // Generate license plate for car: e.g., "59A-123.45"
+                    String letter = String.valueOf((char)('A' + ((globalVehicleCounter + typeIndex) / 50) % 26));
+                    int firstPart = 100 + (globalVehicleCounter % 900); // 100-999
+                    int secondPart = 10 + (globalVehicleCounter % 90);  // 10-99
+                    String licensePlate = String.format("%s%s-%d.%d", prefix, letter, firstPart, secondPart);
+                    
+                    // Tạo ghi chú tình trạng xe
+                    String conditionNote = String.format(
+                        "Xe %s tại %s - Tình trạng tốt, đã bảo trì định kỳ. " +
+                        "Pin: %d%%. Quãng đường đã đi: %,d km.",
+                        type.getName(),
+                        city,
+                        85 + (i * 5), // Pin từ 85-95%
+                        (globalVehicleCounter * 1000) + (i * 500) // Km đã đi
+                    );
+                    
                     Vehicle vehicle = Vehicle.builder()
                             .type(type)
                             .station(station)
-                            .status(i == 0 ? Vehicle.VehicleStatus.MAINTENANCE : Vehicle.VehicleStatus.AVAILABLE)
-                            .conditionNotes("Good condition, regular maintenance completed")
-                            .photos("/photos/vehicle_" + type.getName().toLowerCase().replace(" ", "_") + "_" + (i + 1) + ".jpg")
+                            .licensePlate(licensePlate)
+                            .status(i == 0 && typeIndex % 3 == 0 ? 
+                                    Vehicle.VehicleStatus.MAINTENANCE : 
+                                    Vehicle.VehicleStatus.AVAILABLE)
+                            .conditionNotes(conditionNote)
+                            .photos(type.getImageUrl()) // Sử dụng ảnh từ VehicleType
                             .build();
                     vehicleRepository.save(vehicle);
+                    
+                    globalVehicleCounter++;
                 }
             }
         }

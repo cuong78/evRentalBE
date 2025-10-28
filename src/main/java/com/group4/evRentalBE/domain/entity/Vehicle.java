@@ -31,6 +31,9 @@ public class Vehicle {
     @Column(nullable = false)
     private VehicleStatus status = VehicleStatus.AVAILABLE;
 
+    @Column(unique = true, length = 20)
+    private String licensePlate;
+
     @Column(columnDefinition = "TEXT")
     private String conditionNotes;
 
