@@ -25,7 +25,7 @@ import org.springframework.web.cors.CorsUtils;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Lazy
+
     private final AuthenticationService authenticationService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
