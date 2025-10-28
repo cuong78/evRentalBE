@@ -33,6 +33,17 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
     // Find bookings by status
     List<Booking> findByStatusOrderByCreatedAtDesc(Booking.BookingStatus status);
     
+    // Count reserved vehicles (CONFIRMED or ACTIVE) for a specific station, type, and date range
+    @Query("SELECT COUNT(b) FROM Booking b WHERE " +
+           "b.station.id = :stationId AND " +
+           "b.type.id = :typeId AND " +
+           "(b.status = 'CONFIRMED' OR b.status = 'ACTIVE') AND " +
+           "b.startDate < :endDate AND b.endDate > :startDate")
+    long countReservedVehicles(@Param("stationId") Long stationId,
+                              @Param("typeId") Long typeId,
+                              @Param("startDate") java.time.LocalDate startDate,
+                              @Param("endDate") java.time.LocalDate endDate);
+    
     // Count methods for user profile
     long countByUserUserId(Long userId);
     long countByUserUserIdAndStatus(Long userId, Booking.BookingStatus status);
