@@ -16,9 +16,25 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class BookingResponse {
     private String id;
+    
+    // User information (trực quan hơn)
     private Long userId;
+    private String userPhone;
+    private String username;
+    
+    // Station information (trực quan hơn)
     private Long stationId;
+    private String stationName;
+    private String stationAddress;
+    
+    // Vehicle Type information (trực quan hơn)
     private Long typeId;
+    private String typeName;
+    
+    // Vehicle information (chỉ có khi status = ACTIVE hoặc COMPLETED)
+    private Long vehicleId;
+    private String vehicleName;
+    
     private LocalDate startDate;
     private LocalDate endDate;
     private Double totalPayment;

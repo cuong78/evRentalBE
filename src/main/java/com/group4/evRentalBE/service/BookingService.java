@@ -11,6 +11,6 @@ public interface BookingService {
     List<BookingResponse> getBookingsByCustomer(Long userId);
     void cancelExpiredBookings();
     List<BookingResponse> getConfirmedBookingsByPhone(String phone);
-
     List<BookingResponse> getActiveBookingsByPhone(String phone);
+    List<BookingResponse> getBookingsByStatus(String status);
 }

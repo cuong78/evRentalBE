@@ -149,20 +149,60 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<BookingResponse> getBookingsByStatus(String status) {
+        // Validate và convert status string to enum
+        Booking.BookingStatus bookingStatus;
+        try {
+            bookingStatus = Booking.BookingStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessRuleException(
+                "Invalid booking status. Valid values are: PENDING, CONFIRMED, ACTIVE, COMPLETED, CANCELLED"
+            );
+        }
+
+        // Lấy danh sách booking theo status và sắp xếp theo thời gian tạo mới nhất
+        List<Booking> bookings = bookingRepository.findByStatusOrderByCreatedAtDesc(bookingStatus);
+
+        return bookings.stream()
+                .map(this::mapToBookingResponse)
+                .collect(Collectors.toList());
+    }
+
     private BookingResponse mapToBookingResponse(Booking booking) {
-        return BookingResponse.builder()
+        BookingResponse.BookingResponseBuilder builder = BookingResponse.builder()
                 .id(booking.getId())
+                // User information
                 .userId(booking.getUser().getUserId())
+                .userPhone(booking.getUser().getPhone())
+                .username(booking.getUser().getUsername())
+                // Station information
                 .stationId(booking.getStation().getId())
+                .stationName(booking.getStation().getCity())
+                .stationAddress(booking.getStation().getAddress())
+                // Vehicle Type information
                 .typeId(booking.getType().getId())
+                .typeName(booking.getType().getName())
                 .startDate(booking.getStartDate())
                 .endDate(booking.getEndDate())
                 .totalPayment(booking.getTotalPayment())
                 .status(booking.getStatus())
                 .paymentExpiryTime(booking.getPaymentExpiryTime())
                 .createdAt(booking.getCreatedAt())
-                .updatedAt(booking.getUpdatedAt())
-                .build();
+                .updatedAt(booking.getUpdatedAt());
+
+        // Add vehicle information if booking is ACTIVE or COMPLETED
+        if ((booking.getStatus() == Booking.BookingStatus.ACTIVE || 
+             booking.getStatus() == Booking.BookingStatus.COMPLETED) && 
+            booking.getContract() != null && 
+            booking.getContract().getVehicle() != null) {
+            
+            Vehicle vehicle = booking.getContract().getVehicle();
+            builder.vehicleId(vehicle.getId())
+                   .vehicleName(vehicle.getType().getName() + " #" + vehicle.getId());
+        }
+
+        return builder.build();
     }
 
 

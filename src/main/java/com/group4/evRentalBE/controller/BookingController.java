@@ -53,5 +53,13 @@ public class BookingController {
         return ResponseEntity.ok(responses);
     }
 
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<BookingResponse>> getBookingsByStatus(
+            @PathVariable String status) {
+
+        List<BookingResponse> responses = bookingService.getBookingsByStatus(status);
+        return ResponseEntity.ok(responses);
+    }
+
 
 }
