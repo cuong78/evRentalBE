@@ -15,4 +15,5 @@ public class VehicleTypeAvailabilityResponse {
     private Double depositAmount;
     private Double rentalRate;
     private Integer availableCount;
+    private String imageUrl;
 }

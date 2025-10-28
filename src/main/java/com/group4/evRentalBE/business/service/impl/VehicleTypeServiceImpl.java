@@ -129,6 +129,8 @@ public class VehicleTypeServiceImpl implements VehicleTypeService {
                         .depositAmount(type.getDepositAmount())
                         .rentalRate(type.getRentalRate())
                         .availableCount(availableCountByType.getOrDefault(type, 0L).intValue())
+                        .imageUrl(type.getImageUrl())
+                
                         .build())
                 .collect(Collectors.toList());
     }
@@ -208,6 +210,7 @@ public class VehicleTypeServiceImpl implements VehicleTypeService {
                 .depositAmount(type.getDepositAmount())
                 .rentalRate(type.getRentalRate())
                 .availableCount(availableCount)
+                .imageUrl(type.getImageUrl())
                 .build();
     }
 
