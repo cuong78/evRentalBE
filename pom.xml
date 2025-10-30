@@ -28,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+
 	</properties>
 	<dependencies>
 		<dependency>
@@ -187,6 +188,12 @@
 		</dependency>
 
 
+		<!-- Tesseract OCR -->
+		<dependency>
+			<groupId>net.sourceforge.tess4j</groupId>
+			<artifactId>tess4j</artifactId>
+			<version>5.9.0</version>
+		</dependency>
 
 
 	</dependencies>

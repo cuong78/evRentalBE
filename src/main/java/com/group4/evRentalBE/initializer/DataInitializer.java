@@ -37,7 +37,6 @@ public class DataInitializer implements CommandLineRunner {
         initializeVehicleTypes();
         initializeRentalStations();
         initializeUsers();
-        initializeDocuments();
         initializeVehicles();
         initializeWallets();
     }
@@ -325,51 +324,7 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private void initializeDocuments() {
-        // Get all customer users
-        var customerUsers = userRepository.findAll().stream()
-                .filter(user -> user.hasRole("CUSTOMER"))
-                .toList();
 
-        String[] cccdNumbers = {"123456789012", "234567890123", "345678901234", "456789012345", "567890123456"};
-        String[] drivingLicenseNumbers = {"B1123456", "B2234567", "B3345678", "B4456789", "B5567890"};
-
-        for (int i = 0; i < customerUsers.size() && i < cccdNumbers.length; i++) {
-            User customerUser = customerUsers.get(i);
-            
-            // Create CCCD document
-            Document cccdDoc = Document.builder()
-                    .user(customerUser)
-                    .documentType(Document.DocumentType.CCCD)
-                    .documentNumber(cccdNumbers[i])
-                    .frontPhoto("/photos/cccd_front_" + (i + 1) + ".jpg")
-                    .backPhoto("/photos/cccd_back_" + (i + 1) + ".jpg")
-                    .issueDate(LocalDate.now().minusYears(2))
-                    .expiryDate(LocalDate.now().plusYears(8))
-                    .issuedBy("Department of Public Security")
-                    .status(Document.DocumentStatus.VERIFIED)
-                    .verifiedAt(LocalDateTime.now().minusDays(30))
-                    .isDefault(true)
-                    .build();
-            documentRepository.save(cccdDoc);
-
-            // Create Driving License document
-            Document drivingLicenseDoc = Document.builder()
-                    .user(customerUser)
-                    .documentType(Document.DocumentType.DRIVING_LICENSE)
-                    .documentNumber(drivingLicenseNumbers[i])
-                    .frontPhoto("/photos/driving_license_front_" + (i + 1) + ".jpg")
-                    .backPhoto("/photos/driving_license_back_" + (i + 1) + ".jpg")
-                    .issueDate(LocalDate.now().minusYears(1))
-                    .expiryDate(LocalDate.now().plusYears(4))
-                    .issuedBy("Department of Transport")
-                    .status(Document.DocumentStatus.VERIFIED)
-                    .verifiedAt(LocalDateTime.now().minusDays(15))
-                    .isDefault(false)
-                    .build();
-            documentRepository.save(drivingLicenseDoc);
-        }
-    }
 
     private void initializeVehicles() {
         var stations = rentalStationRepository.findAll();
