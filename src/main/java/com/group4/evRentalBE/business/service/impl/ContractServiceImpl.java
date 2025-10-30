@@ -20,7 +20,6 @@ public class ContractServiceImpl implements ContractService {
     private final ContractRepository contractRepository;
     private final BookingRepository bookingRepository;
     private final VehicleRepository vehicleRepository;
-    private final DocumentRepository documentRepository;
 
     @Override
     @Transactional
