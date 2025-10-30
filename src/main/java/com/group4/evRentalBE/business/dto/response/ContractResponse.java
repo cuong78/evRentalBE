@@ -16,7 +16,6 @@ public class ContractResponse {
     private Long vehicleTypeId;
     private Long documentId;
     private String conditionNotes;
-    private String photos;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
