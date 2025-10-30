@@ -1,5 +1,6 @@
 package com.group4.evRentalBE.business.service.impl;
 
+import com.group4.evRentalBE.business.dto.response.PaymentResponse;
 import com.group4.evRentalBE.infrastructure.constant.ResponseObject;
 import com.group4.evRentalBE.domain.entity.User;
 import com.group4.evRentalBE.infrastructure.exception.exceptions.ResourceNotFoundException;
@@ -14,6 +15,8 @@ import com.group4.evRentalBE.business.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,12 +29,11 @@ import javax.crypto.spec.SecretKeySpec;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -436,4 +438,66 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BusinessRuleException("Failed to process wallet payment: " + e.getMessage());
         }
     }
+
+    @Override
+    public List<PaymentResponse> getAllPayments() {
+        return paymentRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PaymentResponse> getPaymentsByStationAndType(Long stationId, Long typeId) {
+        return paymentRepository.findByStationAndType(stationId, typeId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+
+    @Override
+    public List<PaymentResponse> getPaymentsFiltered(Long stationId, Long vehicleTypeId,
+                                                     LocalDate startDate, LocalDate endDate){
+
+    Specification<Payment> spec = (root, query, cb) -> cb.conjunction();
+
+
+        if (stationId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.join("booking").get("station").get("id"), stationId));
+        }
+
+        if (vehicleTypeId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.join("booking").get("type").get("id"), vehicleTypeId));
+        }
+
+        if (startDate != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("paymentDate"), startDate));
+        }
+
+        if (endDate != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("paymentDate"), endDate));
+        }
+
+        List<Payment> payments = paymentRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "paymentDate"));
+
+        return payments.stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private PaymentResponse toResponse(Payment payment) {
+        return new PaymentResponse(
+                payment.getId(),
+                payment.getType().name(),
+                payment.getStatus().name(),
+                payment.getAmount(),
+                payment.getPaymentDate()
+        );
+    }
 }
+

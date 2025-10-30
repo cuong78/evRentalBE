@@ -1,8 +1,12 @@
 package com.group4.evRentalBE.business.service;
 
+import com.group4.evRentalBE.business.dto.response.PaymentResponse;
 import com.group4.evRentalBE.infrastructure.constant.ResponseObject;
 import com.group4.evRentalBE.domain.entity.Payment;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 public interface PaymentService {
@@ -26,5 +30,8 @@ public interface PaymentService {
      * @return ResponseObject containing the payment result
      */
     ResponseObject payWithWallet(String bookingId);
-
+    List<PaymentResponse> getAllPayments();
+    List<PaymentResponse> getPaymentsByStationAndType(Long stationId, Long typeId);
+    public List<PaymentResponse> getPaymentsFiltered(Long stationId, Long vehicleTypeId,
+                                                     LocalDate startDate, LocalDate endDate);
 }
