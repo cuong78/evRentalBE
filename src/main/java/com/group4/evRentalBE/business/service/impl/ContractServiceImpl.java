@@ -10,8 +10,14 @@ import com.group4.evRentalBE.domain.repository.DocumentRepository;
 import com.group4.evRentalBE.domain.repository.VehicleRepository;
 import com.group4.evRentalBE.business.service.ContractService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -148,4 +154,57 @@ public class ContractServiceImpl implements ContractService {
                 .updatedAt(contract.getUpdatedAt())
                 .build();
     }
+    @Override
+    public List<ContractResponse> getContractsFiltered(Long stationId, Long vehicleTypeId,
+                                                       LocalDate startDate, LocalDate endDate) {
+        Specification<Contract> spec = (root, query, cb) -> cb.conjunction();
+
+        if (stationId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.join("booking").get("station").get("id"), stationId));
+        }
+
+        if (vehicleTypeId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.join("booking").get("type").get("id"), vehicleTypeId));
+        }
+
+        if (startDate != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("createdAt"), startDate.atStartOfDay()));
+        }
+
+        if (endDate != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("createdAt"), endDate.atTime(23, 59, 59)));
+        }
+
+        List<Contract> contracts = contractRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        return contracts.stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private ContractResponse toResponse(Contract contract) {
+        return ContractResponse.builder()
+                .id(contract.getId())
+                .bookingId(contract.getBooking() != null ? contract.getBooking().getId() : null)
+                .vehicleId(contract.getVehicle() != null ? contract.getVehicle().getId() : null)
+                .stationId(contract.getBooking() != null ? contract.getBooking().getStation().getId() : null)
+                .vehicleTypeId(contract.getBooking() != null ? contract.getBooking().getType().getId() : null)
+                .documentId(contract.getDocument().getId())
+                .conditionNotes(contract.getConditionNotes())
+                .createdAt(contract.getCreatedAt())
+                .updatedAt(contract.getUpdatedAt())
+                .build();
+    }
+    @Override
+    public List<ContractResponse> getAllContracts() {
+        return contractRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
 }
