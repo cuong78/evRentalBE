@@ -20,4 +20,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Lấy theo role name
     @Query("select u from User u join u.roles r where r.name = :roleName")
     List<User> findAllByRole(@Param("roleName") String roleName);
+
+    long countByManagedStation_IdAndRoles_Name(Long stationId, String roleName);
+
 }

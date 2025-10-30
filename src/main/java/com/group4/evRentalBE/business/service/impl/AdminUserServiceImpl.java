@@ -4,13 +4,10 @@ import com.group4.evRentalBE.business.dto.request.AdminCreateUserRequest;
 import com.group4.evRentalBE.business.dto.request.AdminUpdateUserRequest;
 import com.group4.evRentalBE.business.dto.response.AdminUserResponse;
 import com.group4.evRentalBE.business.service.AdminUserService;
-import com.group4.evRentalBE.domain.entity.RentalStation;
-import com.group4.evRentalBE.domain.entity.Role;
-import com.group4.evRentalBE.domain.entity.User;
-import com.group4.evRentalBE.domain.repository.RentalStationRepository;
-import com.group4.evRentalBE.domain.repository.RoleRepository;
-import com.group4.evRentalBE.domain.repository.UserRepository;
+import com.group4.evRentalBE.domain.entity.*;
+import com.group4.evRentalBE.domain.repository.*;
 import com.group4.evRentalBE.infrastructure.constant.PredefinedRole;
+import com.group4.evRentalBE.infrastructure.exception.exceptions.BadRequestException;
 import com.group4.evRentalBE.infrastructure.exception.exceptions.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,6 +28,8 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final RoleRepository roleRepo;
     private final RentalStationRepository stationRepo; // nếu có STAFF quản lý trạm
     private final PasswordEncoder passwordEncoder;
+    private final BookingRepository bookingRepo;
+    private final WalletRepository walletRepo;
 
     // ---------- CUSTOMER ----------
     @Override
@@ -87,9 +87,40 @@ public class AdminUserServiceImpl implements AdminUserService {
         User user = userRepo.findById(userId)
                 .filter(u -> u.hasRole(PredefinedRole.CUSTOMER_ROLE))
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+
+        long totalBookings = bookingRepo.countByUserUserId(user.getUserId());
+        if (totalBookings > 0) {
+            throw new BadRequestException("Cannot delete user: this customer has booking(s).");
+        }
+
+        long pending   = bookingRepo.countByUserUserIdAndStatus(user.getUserId(), Booking.BookingStatus.PENDING);
+        long confirmed = bookingRepo.countByUserUserIdAndStatus(user.getUserId(), Booking.BookingStatus.CONFIRMED);
+        long active    = bookingRepo.countByUserUserIdAndStatus(user.getUserId(), Booking.BookingStatus.ACTIVE);
+        long unfinished = pending + confirmed + active;
+        if (unfinished > 0) {
+            throw new BadRequestException(
+                    "Customer still has " + unfinished + " unfinished booking(s). Deletion is not allowed."
+            );
+        }
+
+        // (C) Ví phải = 0 (nếu có) → xóa ví trước để tránh FK
+        Wallet wallet = walletRepo.findByUserUserId(user.getUserId()).orElse(null);
+        if (wallet != null) {
+            Long balance = wallet.getBalance(); // kiểu Long trong dự án của bạn
+            if (balance != null && balance != 0L) {
+                throw new BadRequestException("Wallet balance must be zero before deleting this user.");
+            }
+            walletRepo.delete(wallet); // hoặc walletRepo.deleteByUser_UserId(user.getUserId());
+        }
+
+        // (D) Nếu bạn có bảng refresh_token → dọn trước (tránh FK)
+        // refreshTokenRepo.deleteByUserId(user.getUserId());
+
+        // (E) Cuối cùng xoá user
         userRepo.delete(user);
         log.info("Deleted CUSTOMER userId={}", userId);
     }
+
 
     // ---------- STAFF ----------
     @Override
@@ -153,6 +184,19 @@ public class AdminUserServiceImpl implements AdminUserService {
         User user = userRepo.findById(userId)
                 .filter(u -> u.hasRole(PredefinedRole.STAFF_ROLE))
                 .orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+
+        var station = user.getManagedStation();
+        if (station != null) {
+            long staffCount = userRepo.countByManagedStation_IdAndRoles_Name(
+                    station.getId(), PredefinedRole.STAFF_ROLE);
+
+            if (staffCount <= 1) {
+                throw new BadRequestException(
+                        "This station has only one managing staff. Deletion is not allowed."
+                );
+            }
+        }
+
         userRepo.delete(user);
         log.info("Deleted STAFF userId={}", userId);
     }
