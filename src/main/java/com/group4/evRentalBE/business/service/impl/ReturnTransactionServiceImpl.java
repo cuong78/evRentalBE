@@ -9,11 +9,16 @@ import com.group4.evRentalBE.business.service.ReturnTransactionService;
 import com.group4.evRentalBE.business.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -169,4 +174,60 @@ public class ReturnTransactionServiceImpl implements ReturnTransactionService {
                 .updatedAt(returnTransaction.getUpdatedAt())
                 .build();
     }
+    @Override
+    public List<ReturnTransactionResponse> getAllReturnTransactions() {
+        return returnTransactionRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ReturnTransactionResponse> getReturnTransactionsFiltered(Long stationId, Long vehicleTypeId,
+                                                                         LocalDate startDate, LocalDate endDate) {
+        Specification<ReturnTransaction> spec = (root, query, cb) -> cb.conjunction();
+
+        if (stationId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.join("booking").get("station").get("id"), stationId));
+        }
+
+        if (vehicleTypeId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.join("booking").get("type").get("id"), vehicleTypeId));
+        }
+
+        if (startDate != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("createdAt"), startDate.atStartOfDay()));
+        }
+
+        if (endDate != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("createdAt"), endDate.atTime(23, 59, 59)));
+        }
+
+        List<ReturnTransaction> transactions = returnTransactionRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        return transactions.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    private ReturnTransactionResponse toResponse(ReturnTransaction transaction) {
+        return ReturnTransactionResponse.builder()
+                .id(transaction.getId())
+                .bookingId(transaction.getBooking() != null ? transaction.getBooking().getId() : null)
+                .stationId(transaction.getBooking() != null ? transaction.getBooking().getStation().getId() : null)
+                .vehicleTypeId(transaction.getBooking() != null ? transaction.getBooking().getType().getId() : null)
+                .createdAt(transaction.getCreatedAt())
+                .updatedAt(transaction.getUpdatedAt())
+                .returnDate(transaction.getReturnDate())
+                .additionalFees(transaction.getAdditionalFees())
+                .refundAmount(transaction.getRefundAmount())
+                .conditionNotes(transaction.getConditionNotes())
+                .photos(transaction.getPhotos())
+                .build();
+    }
+
 }

@@ -21,7 +21,8 @@ public class ReturnTransactionResponse {
     private String photos;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
+    private Long stationId;
+    private Long vehicleTypeId;
     // Additional calculated fields
     private Boolean isLateReturn;
     private Long overdueDays;
