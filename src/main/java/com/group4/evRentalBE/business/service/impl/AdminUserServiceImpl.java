@@ -165,6 +165,12 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     private void applyUpdates(User user, AdminUpdateUserRequest req, boolean isStaff) {
+        if (req.getUsername() != null && !req.getUsername().isBlank()) {
+            if (userRepo.existsByUsername(req.getUsername()) && !req.getUsername().equals(user.getUsername())) {
+                throw new IllegalArgumentException("Username already exists");
+            }
+            user.setUsername(req.getUsername());
+        }
         if (req.getEmail() != null) user.setEmail(req.getEmail());
         if (req.getPhone() != null) user.setPhone(req.getPhone());
         if (req.getPassword() != null && !req.getPassword().isBlank())
@@ -176,6 +182,7 @@ public class AdminUserServiceImpl implements AdminUserService {
             user.setManagedStation(station);
         }
     }
+
 
     private AdminUserResponse map(User u) {
         return AdminUserResponse.builder()

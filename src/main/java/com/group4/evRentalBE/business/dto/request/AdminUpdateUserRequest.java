@@ -5,6 +5,7 @@ import lombok.*;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class AdminUpdateUserRequest {
+    private String username;
     @Email private String email;
     private String phone;
     private String password;      // optional: đổi mật khẩu
