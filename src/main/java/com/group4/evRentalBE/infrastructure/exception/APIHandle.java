@@ -6,12 +6,14 @@ import com.group4.evRentalBE.infrastructure.exception.exceptions.*;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.lang.IllegalArgumentException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -169,5 +171,31 @@ public class APIHandle {
                         .message(exception.getMessage())
                         .data(null)
                         .build());
+    }
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ResponseObject> handleInvalidFormat(HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getCause();
+        String message = "Invalid input format";
+
+
+        if (cause instanceof DateTimeParseException) {
+            message = "Invalid date format. Please use 'yyyy-MM-dd'";
+        }
+
+        return ResponseEntity.badRequest().body(ResponseObject.builder()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .message(message)
+                .data(null)
+                .build());
+    }
+
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ResponseObject> handleGeneralException(Exception ex) {
+        return ResponseEntity.internalServerError().body(ResponseObject.builder()
+                .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .message("Unexpected error: " + ex.getMessage())
+                .data(null)
+                .build());
     }
 }
