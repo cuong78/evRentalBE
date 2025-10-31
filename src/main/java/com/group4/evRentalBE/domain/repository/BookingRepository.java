@@ -2,11 +2,13 @@ package com.group4.evRentalBE.domain.repository;
 
 import com.group4.evRentalBE.domain.entity.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -46,4 +48,6 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
     // Count methods for user profile
     long countByUserUserId(Long userId);
     long countByUserUserIdAndStatus(Long userId, Booking.BookingStatus status);
+
+
 }
