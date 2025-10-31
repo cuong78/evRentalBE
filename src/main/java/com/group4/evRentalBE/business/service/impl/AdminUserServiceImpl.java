@@ -44,6 +44,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .username(req.getUsername())
                 .email(req.getEmail())
                 .phone(req.getPhone())
+                .isVerify(true)
                 .password(passwordEncoder.encode(req.getPassword()))
                 .roles(new HashSet<>(Collections.singletonList(customer)))
                 .build();
@@ -135,6 +136,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .username(req.getUsername())
                 .email(req.getEmail())
                 .phone(req.getPhone())
+                .isVerify(true)
                 .password(passwordEncoder.encode(req.getPassword()))
                 .roles(new HashSet<>(Collections.singletonList(staff)))
                 .build();
