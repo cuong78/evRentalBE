@@ -13,20 +13,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
-    @Value("${frontend.url:http://localhost:3000}")
-    private String frontendUrl;
+    @Value("${cors.allowed.origins}")
+    private String allowedOrigins;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins(frontendUrl)
+                .allowedOrigins(allowedOrigins.split(","))
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowCredentials(true)
-                .exposedHeaders(
-                        "Access-Control-Allow-Origin",
-                        "Access-Control-Allow-Methods",
-                        "Access-Control-Allow-Headers")
                 .maxAge(3600);
     }
 
