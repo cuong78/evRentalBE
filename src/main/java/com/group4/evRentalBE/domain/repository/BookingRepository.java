@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+//jpa
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, String> {
     

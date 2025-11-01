@@ -24,6 +24,9 @@ public class DataInitializer implements CommandLineRunner {
     private final RentalStationRepository rentalStationRepository;
     private final PasswordEncoder passwordEncoder;
     private final WalletRepository walletRepository;
+    private final BookingRepository bookingRepository;
+    private final PaymentRepository paymentRepository;
+    private final ContractRepository contractRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -39,6 +42,7 @@ public class DataInitializer implements CommandLineRunner {
         initializeUsers();
         initializeVehicles();
         initializeWallets();
+        initializeBookings();
     }
     private void initializeWallets() {
         // Get all customer users
@@ -381,5 +385,105 @@ public class DataInitializer implements CommandLineRunner {
                 }
             }
         }
+    }
+
+    private void initializeBookings() {
+        // Create a sample active booking for customer1
+        // Booking dates: 30/10/2025 - 31/10/2025
+        
+        // Get customer1
+        User customer = userRepository.findByUsername("customer1")
+                .orElseThrow(() -> new RuntimeException("Customer1 not found"));
+        
+        // Get first station (Ho Chi Minh City)
+        RentalStation station = rentalStationRepository.findAll().get(0);
+        
+        // Get VinFast VF 3 type (first vehicle type)
+        VehicleType vehicleType = vehicleTypeRepository.findByName("VinFast VF 3")
+                .orElseThrow(() -> new RuntimeException("VinFast VF 3 not found"));
+        
+        // Get an available vehicle of this type at the station
+        Vehicle vehicle = vehicleRepository.findAll().stream()
+                .filter(v -> v.getType().getId().equals(vehicleType.getId()) 
+                          && v.getStation().getId().equals(station.getId())
+                          && v.getStatus() == Vehicle.VehicleStatus.AVAILABLE)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No available VinFast VF 3 found"));
+        
+        // Create document for customer if doesn't exist
+        Document document = documentRepository.findAll().stream()
+                .filter(d -> d.getUser().getUserId().equals(customer.getUserId()) 
+                          && d.getStatus() == Document.DocumentStatus.VERIFIED)
+                .findFirst()
+                .orElseGet(() -> {
+                    Document newDoc = Document.builder()
+                            .user(customer)
+                            .documentType(Document.DocumentType.CCCD)
+                            .documentNumber("001234567890")
+                            .frontPhoto("https://example.com/cccd-front.jpg")
+                            .backPhoto("https://example.com/cccd-back.jpg")
+                            .issueDate(LocalDate.of(2020, 1, 15))
+                            .expiryDate(LocalDate.of(2035, 1, 15))
+                            .issuedBy("Cục Cảnh sát ĐKQL cư trú và DLQG về dân cư")
+                            .status(Document.DocumentStatus.VERIFIED)
+                            .verifiedAt(LocalDateTime.now().minusDays(10))
+                            .isDefault(true)
+                            .build();
+                    return documentRepository.save(newDoc);
+                });
+        
+        // Create booking with ACTIVE status
+        Booking booking = new Booking();
+        booking.setId("BOOK-ACTIVE-001");
+        booking.setUser(customer);
+        booking.setStation(station);
+        booking.setType(vehicleType);
+        booking.setStartDate(LocalDate.of(2025, 10, 30));
+        booking.setEndDate(LocalDate.of(2025, 10, 31));
+        booking.setPaymentMethod(Payment.PaymentMethod.VNPAY);
+        booking.setStatus(Booking.BookingStatus.ACTIVE);
+        booking.setIsPaidByWallet(false);
+        booking.setCreatedAt(LocalDateTime.of(2025, 10, 29, 14, 30));
+        booking.setUpdatedAt(LocalDateTime.now());
+        booking.setPaymentExpiryTime(LocalDateTime.of(2025, 10, 29, 14, 40)); // 10 minutes after creation
+        
+        // Calculate total payment (1 day rental + deposit)
+        long days = booking.getRentalDays();
+        Double totalPayment = (days * vehicleType.getRentalRate()) + vehicleType.getDepositAmount();
+        booking.setTotalPayment(totalPayment);
+        
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        // Create successful payment record
+        Payment payment = Payment.builder()
+                .booking(savedBooking)
+                .type(Payment.PaymentType.DEPOSIT)
+                .method(Payment.PaymentMethod.VNPAY)
+                .status(Payment.PaymentStatus.SUCCESS)
+                .amount(totalPayment)
+                .transactionId("VNPAY-20251029-143500")
+                .description("Thanh toán đặt xe VinFast VF 3 từ 30/10/2025 đến 31/10/2025")
+                .paymentDate(LocalDateTime.of(2025, 10, 29, 14, 35))
+                .createdAt(LocalDateTime.of(2025, 10, 29, 14, 35))
+                .updatedAt(LocalDateTime.of(2025, 10, 29, 14, 35))
+                .build();
+        
+        paymentRepository.save(payment);
+        
+        // Create contract (customer picked up the vehicle)
+        Contract contract = Contract.builder()
+                .booking(savedBooking)
+                .vehicle(vehicle)
+                .document(document)
+                .conditionNotes("Xe trong tình trạng tốt. Pin: 95%. Không trầy xước. Khách hàng đã nhận xe vào 30/10/2025 lúc 08:00.")
+                .createdAt(LocalDateTime.of(2025, 10, 30, 8, 0))
+                .updatedAt(LocalDateTime.of(2025, 10, 30, 8, 0))
+                .build();
+        
+        contractRepository.save(contract);
+        
+        // Update vehicle status to RENTED
+        vehicle.setStatus(Vehicle.VehicleStatus.RENTED);
+        vehicleRepository.save(vehicle);
     }
 }
