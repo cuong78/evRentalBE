@@ -4,12 +4,56 @@ Backend service cho hệ thống cho thuê xe điện (Electric Vehicle Rental).
 
 ## 📋 Mục Lục
 
+- [Kiến trúc](#-kiến-trúc)
 - [Tính năng](#-tính-năng)
 - [Công nghệ](#-công-nghệ)
 - [Cài đặt Local](#-cài-đặt-local)
 - [Deploy Production](#-deploy-production)
 - [API Documentation](#-api-documentation)
 - [CI/CD](#-cicd)
+
+## 🏗 Kiến Trúc
+
+Hệ thống được xây dựng theo mô hình **4-Tier Architecture** (Layered Architecture):
+
+![Architecture Diagram](docs/images/architecture.png)
+
+### 📐 Các Tầng (Tiers/Layers)
+
+#### 1️⃣ **Presentation Tier** (UI Layer)
+- Frontend application interface
+- Tương tác với người dùng qua HTTP/REST API
+
+#### 2️⃣ **Application Tier** 
+Bao gồm 3 layers chính:
+
+**🎯 PRESENTATION Layer (Controller)**
+- `AuthenticationController`, `BookingController`, `VehicleController`, etc.
+- Xử lý HTTP requests/responses
+- Validation đầu vào
+
+**💼 BUSINESS Layer**
+- **Service**: Business logic (AuthenticationService, BookingService, PaymentService...)
+- **DTO**: Data Transfer Objects (Request/Response)
+- **Mapper**: Chuyển đổi giữa Entity và DTO
+
+**💾 PERSISTENCE Layer**
+- **Entity**: JPA entities (User, Vehicle, Booking...)
+- **Repositories**: Data access layer
+
+**🔧 INFRASTRUCTURE Layer**
+- **CONFIG**: Security, CORS, Cloudinary configuration
+- **EXCEPTION**: Global exception handling
+- **SECURITY**: JWT, Authentication filters
+- **EXTERNAL**: Integration với services bên ngoài (VNPay, FPT.AI OCR)
+
+#### 3️⃣ **Database Tier**
+- PostgreSQL 17.5
+- Quản lý persistent data
+
+### 🔗 Chi tiết kiến trúc
+
+Xem thêm: [Architecture Documentation](https://drive.google.com/file/d/1XNkgZxUhOyyU9XCZGKLFV_xVG_uqrGZ9/view?usp=sharing)
 
 ## ✨ Tính Năng
 
